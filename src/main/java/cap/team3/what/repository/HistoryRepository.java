@@ -10,6 +10,5 @@ import java.util.List;
 
 @Repository
 public interface HistoryRepository extends JpaRepository<History, Long> {
-    History saveHistory(History history);
-    List<History> findByTimeBetween(LocalDateTime startTime, LocalDateTime endTime);
+    // List<History> findByTimeBetween(LocalDateTime startTime, LocalDateTime endTime);
 }
