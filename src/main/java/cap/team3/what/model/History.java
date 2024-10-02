@@ -1,6 +1,7 @@
 package cap.team3.what.model;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class History {
     private String content;
     private String domain;
     private int spentTime;
+    private LocalDateTime visitTime;
 
     @ElementCollection
     @CollectionTable(name = "history_keywords", joinColumns = @JoinColumn(name = "history_id"))
@@ -28,11 +30,14 @@ public class History {
     private List<String> keywords;
 
     @Builder
-    public History(String title, String content, String domain, int spentTime, List<String> keywords) {
+    public History(String title, String content, String domain, int spentTime, LocalDateTime visitTime, List<String> keywords) {
         this.title = title;
         this.content = content;
         this.domain = domain;
         this.spentTime = spentTime;
+        this.visitTime = visitTime;
         this.keywords = keywords;
     }
+
+    public History() {}
 }
