@@ -16,12 +16,17 @@ public class History {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String userId;
+
     private String title;
 
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
-    private String domain;
+
+    private String url;
+
     private int spentTime;
+
     private LocalDateTime visitTime;
 
     @ElementCollection
@@ -30,10 +35,11 @@ public class History {
     private List<String> keywords;
 
     @Builder
-    public History(String title, String content, String domain, int spentTime, LocalDateTime visitTime, List<String> keywords) {
+    public History(String userId, String url, String title, String content, int spentTime, LocalDateTime visitTime, List<String> keywords) {
+        this.userId = userId;
+        this.url = url;
         this.title = title;
         this.content = content;
-        this.domain = domain;
         this.spentTime = spentTime;
         this.visitTime = visitTime;
         this.keywords = keywords;

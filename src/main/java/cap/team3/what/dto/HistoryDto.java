@@ -11,19 +11,22 @@ public class HistoryDto {
 
     private Long id;
 
+    private String userId;
     private String title;
     private String content;
-    private String domain;
+    private String url;
+    
     private int spentTime;
     private LocalDateTime visitTime;
     private List<String> keywords;
     
     @Builder
-    public HistoryDto(Long id, String title, String content, String domain, int spentTime, LocalDateTime visitTime, List<String> keywords) {
+    public HistoryDto(Long id, String userId, String title, String content, String url, int spentTime, LocalDateTime visitTime, List<String> keywords) {
         this.id = id;
+        this.userId = userId;
         this.title = title;
         this.content = content;
-        this.domain = domain;
+        this.url = url;
         this.spentTime = spentTime;
         this.visitTime = visitTime;
         this.keywords = keywords;

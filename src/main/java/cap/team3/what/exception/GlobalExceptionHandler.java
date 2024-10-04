@@ -19,6 +19,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @ExceptionHandler(HistoryNotFoundException.class)
+    public final ResponseEntity<Object> handleHistoryNotFoundException(HistoryNotFoundException ex, WebRequest request) {
+        log.error("HistoryNotFoundException occurred: {}", ex.getMessage(), ex);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     // 기본적인 예외 처리
     @ExceptionHandler(RuntimeException.class)
     public final ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {
@@ -31,7 +42,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 데이터가 없는 경우에 대한 처리
     @ExceptionHandler(IllegalArgumentException.class)
     public final ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
         log.warn("IllegalArgumentException occurred: {}", ex.getMessage(), ex);

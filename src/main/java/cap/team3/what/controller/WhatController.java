@@ -25,6 +25,12 @@ public class WhatController {
 
     private final HistoryService historyService;
 
+    @GetMapping("/api")
+    public ResponseEntity<?> healthCheck() {
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+    
+
     @GetMapping("/api/history")
     public ResponseEntity<List<HistoryDto>> getHistoryByDate(@RequestParam(value = "days", defaultValue = "7") int days) {
         List<HistoryDto> histories = historyService.getHistoriesByTime(LocalDateTime.now().minusDays(days), LocalDateTime.now());
@@ -37,13 +43,20 @@ public class WhatController {
         return new ResponseEntity<>(savedHistory, HttpStatus.OK);
     }
     
-    @PutMapping("/api/history")
-    public ResponseEntity<HistoryDto> generateKeywords(@RequestParam Long id, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
+    @PutMapping("/api/history/{id}")
+    public ResponseEntity<HistoryDto> updateHistory(@PathVariable Long id, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
         return new ResponseEntity<>(historyService.updateHistory(id, spentTime), HttpStatus.OK);
     }
 
-    @DeleteMapping("/api/history")
-    public ResponseEntity<String> deleteHistory(@RequestParam Long id) {
+    @PutMapping("/api/history/{id}/keyword")
+    public ResponseEntity<List<String>> extractKeywords(@PathVariable Long id) {
+        List<String> keywords = historyService.extractKeywords(id);
+
+        return new ResponseEntity<>(keywords, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/api/history/{id}")
+    public ResponseEntity<String> deleteHistory(@PathVariable Long id) {
         historyService.deleteHistory(id);
         return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
     }
@@ -54,13 +67,13 @@ public class WhatController {
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 
-    @GetMapping("/api/statistics/{keyword}/frequency")
-    public int getKeywordFrequency(@PathVariable String keyword) {
-        return historyService.getKeywordFrequency(keyword);
+    @GetMapping("/api/history/statistics/{keyword}/frequency")
+    public int getKeywordFrequency(@RequestParam(value = "days", defaultValue = "7") int days, @PathVariable String keyword) {
+        return historyService.getKeywordFrequency(LocalDateTime.now().minusDays(days), LocalDateTime.now(), keyword);
     }
 
-    @GetMapping("/api/statistics/{keyword}/spent_time")
-    public int getTotalSpentTime(@PathVariable String keyword) {
-        return historyService.getTotalSpentTime(keyword);
+    @GetMapping("/api/history/statistics/{keyword}/spent_time")
+    public int getTotalSpentTime(@RequestParam(value = "days", defaultValue = "7") int days, @PathVariable String keyword) {
+        return historyService.getTotalSpentTime(LocalDateTime.now().minusDays(days), LocalDateTime.now(), keyword);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cap.team3.what.dto.HistoryDto;
+import cap.team3.what.exception.HistoryNotFoundException;
 import cap.team3.what.model.History;
 import cap.team3.what.repository.HistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     public HistoryDto getHistory(Long id) {
         History history = historyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         return convertToDto(history);
     }
 
@@ -42,7 +43,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Transactional
     public HistoryDto updateHistory(Long id, int spentTime) {
         History history = historyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
 
         history.setSpentTime(spentTime);
         if (history.getKeywords().isEmpty()) {
@@ -55,9 +56,21 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional
+    public List<String> extractKeywords(Long id) {
+        History history = historyRepository.findById(id)
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
+
+        List<String> keywords = aiService.extractKeywords(history.getContent());
+        history.setKeywords(keywords);
+        historyRepository.save(history);
+        return keywords;
+    }
+
+    @Override
+    @Transactional
     public void deleteHistory(Long id) {
         History history = historyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         
         historyRepository.delete(history);
     }
@@ -67,7 +80,7 @@ public class HistoryServiceImpl implements HistoryService {
 
         List<History> histories = historyRepository.findByVisitTimeBetween(startTime, endTime);
         if (histories.isEmpty()) {
-            throw new RuntimeException("No histories in the time");
+            throw new HistoryNotFoundException("No histories in the time");
         }
 
         return histories.stream()
@@ -80,7 +93,7 @@ public class HistoryServiceImpl implements HistoryService {
 
         List<History> histories = historyRepository.findByVisitTimeBetweenAndKeywordsContaining(startTime, endTime, keyword);
         if (histories.isEmpty()) {
-            throw new RuntimeException("No corresponding histories that matches with keyword in the time");
+            throw new HistoryNotFoundException("No corresponding histories that matches with keyword in the time");
         }
 
         return histories.stream()
@@ -89,7 +102,7 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public int getKeywordFrequency(String keyword) {
+    public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
         List<History> histories = historyRepository.findByKeywordsContaining(keyword);
         if (histories.isEmpty()) {
             return 0;
@@ -98,10 +111,10 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public int getTotalSpentTime(String keyword) {
+    public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
         List<History> histories = historyRepository.findByKeywordsContaining(keyword);
         if (histories.isEmpty()) {
-            throw new RuntimeException("No such history in DB");
+            throw new HistoryNotFoundException("No such history in DB");
             
         }
         int totalSpentTime = histories.stream()
@@ -115,7 +128,7 @@ public class HistoryServiceImpl implements HistoryService {
         return History.builder()
                       .title(historyDto.getTitle())
                       .content(historyDto.getContent())
-                      .domain(historyDto.getDomain())
+                      .url(historyDto.getUrl())
                       .spentTime(historyDto.getSpentTime())
                       .visitTime(historyDto.getVisitTime())
                       .keywords(historyDto.getKeywords())
@@ -127,7 +140,7 @@ public class HistoryServiceImpl implements HistoryService {
                          .id(history.getId())
                          .title(history.getTitle())
                          .content(history.getContent())
-                         .domain(history.getDomain())
+                         .url(history.getUrl())
                          .spentTime(history.getSpentTime())
                          .visitTime(history.getVisitTime())
                          .keywords(history.getKeywords())
