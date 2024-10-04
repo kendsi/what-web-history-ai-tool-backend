@@ -1,17 +1,20 @@
 package cap.team3.what.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import cap.team3.what.dto.HistoryDto;
 import cap.team3.what.model.History;
 import cap.team3.what.repository.HistoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HistoryServiceImpl implements HistoryService {
@@ -20,6 +23,7 @@ public class HistoryServiceImpl implements HistoryService {
     private final AIService aiService;
     
     @Override
+    @Transactional
     public HistoryDto saveHistory(HistoryDto historyDto) {
 
         History newHistory = convertToModel(historyDto);
@@ -29,81 +33,82 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     public HistoryDto getHistory(Long id) {
-        Optional<History> history = historyRepository.findById(id);
-        if (history.isPresent()) {
-            return convertToDto(history.get());
-        } else {
-            throw new RuntimeException("No such history in DB");
-        }
+        History history = historyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+        return convertToDto(history);
     }
 
     @Override
+    @Transactional
     public HistoryDto updateHistory(Long id, int spentTime) {
-        Optional<History> history = historyRepository.findById(id);
-        if (history.isPresent()) {
-            History updatedHistory = history.get();
-            
-            List<String> keywords = aiService.extractKeywords(updatedHistory.getContent());
+        History history = historyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No such history in DB"));
 
-            updatedHistory.setSpentTime(spentTime);
-            updatedHistory.setKeywords(keywords);
-
-            return convertToDto(historyRepository.save(updatedHistory));
-        } else {
-            throw new RuntimeException("No such history in DB");
+        history.setSpentTime(spentTime);
+        if (history.getKeywords().isEmpty()) {
+            List<String> keywords = aiService.extractKeywords(history.getContent());
+            history.setKeywords(new ArrayList<>(keywords));
         }
+            
+        return convertToDto(historyRepository.save(history));
+    }
+
+    @Override
+    @Transactional
+    public void deleteHistory(Long id) {
+        History history = historyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+        
+        historyRepository.delete(history);
     }
 
     @Override
     public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime) {
-        Optional<List<History>> histories = historyRepository.findByVisitTimeBetween(startTime, endTime);
-        if (histories.isPresent()) {
-            return histories.get().stream()
-                        .map(this::convertToDto)
-                        .collect(Collectors.toList());
-        }
-        else {
+
+        List<History> histories = historyRepository.findByVisitTimeBetween(startTime, endTime);
+        if (histories.isEmpty()) {
             throw new RuntimeException("No histories in the time");
         }
+
+        return histories.stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList());
     }
 
     @Override
     public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
-        Optional<List<History>> histories = historyRepository.findByVisitTimeBetweenAndKeyword(startTime, endTime, keyword);
-        if (histories.isPresent()) {
-            return histories.get().stream()
-                        .map(this::convertToDto)
-                        .collect(Collectors.toList());
-        }
-        else {
+
+        List<History> histories = historyRepository.findByVisitTimeBetweenAndKeywordsContaining(startTime, endTime, keyword);
+        if (histories.isEmpty()) {
             throw new RuntimeException("No corresponding histories that matches with keyword in the time");
         }
+
+        return histories.stream()
+                        .map(this::convertToDto)
+                        .collect(Collectors.toList());
     }
 
     @Override
     public int getKeywordFrequency(String keyword) {
-        Optional<List<History>> histories = historyRepository.findByKeyword(keyword);
-        if (histories.isPresent()) {
-            return histories.get().size();
-        }
-        else {
+        List<History> histories = historyRepository.findByKeywordsContaining(keyword);
+        if (histories.isEmpty()) {
             return 0;
-        }        
+        }
+        return histories.size();       
     }
 
     @Override
     public int getTotalSpentTime(String keyword) {
-        Optional<List<History>> histories = historyRepository.findByKeyword(keyword);
-        if (histories.isPresent()) {
-            int totalSpentTime = histories.get().stream()
-                .mapToInt(History::getSpentTime)
-                .sum();
-            
-            return totalSpentTime;
-        }
-        else {
+        List<History> histories = historyRepository.findByKeywordsContaining(keyword);
+        if (histories.isEmpty()) {
             throw new RuntimeException("No such history in DB");
-        }  
+            
+        }
+        int totalSpentTime = histories.stream()
+                    .mapToInt(History::getSpentTime)
+                    .sum();
+            
+        return totalSpentTime;
     }
 
     private History convertToModel(HistoryDto historyDto) {

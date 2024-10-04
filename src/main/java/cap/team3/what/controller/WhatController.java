@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -25,7 +26,7 @@ public class WhatController {
     private final HistoryService historyService;
 
     @GetMapping("/api/history")
-    public ResponseEntity<List<HistoryDto>> getHistoryByDate(@RequestParam int days) {
+    public ResponseEntity<List<HistoryDto>> getHistoryByDate(@RequestParam(value = "days", defaultValue = "7") int days) {
         List<HistoryDto> histories = historyService.getHistoriesByTime(LocalDateTime.now().minusDays(days), LocalDateTime.now());
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
@@ -37,12 +38,18 @@ public class WhatController {
     }
     
     @PutMapping("/api/history")
-    public ResponseEntity<HistoryDto> generateKeywords(@RequestParam Long id, @RequestParam int spentTime) {
+    public ResponseEntity<HistoryDto> generateKeywords(@RequestParam Long id, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
         return new ResponseEntity<>(historyService.updateHistory(id, spentTime), HttpStatus.OK);
     }
+
+    @DeleteMapping("/api/history")
+    public ResponseEntity<String> deleteHistory(@RequestParam Long id) {
+        historyService.deleteHistory(id);
+        return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
+    }
     
-    @GetMapping("/api/history/keyword")
-    public ResponseEntity<List<HistoryDto>> getHistoryByDateAndKeyword(@RequestParam int days, @RequestParam String keyword) {
+    @GetMapping("/api/history/{keyword}")
+    public ResponseEntity<List<HistoryDto>> getHistoryByDateAndKeyword(@RequestParam(value = "days", defaultValue = "7") int days, @PathVariable String keyword) {
         List<HistoryDto> histories = historyService.getHistoriesByTime(LocalDateTime.now().minusDays(days), LocalDateTime.now(), keyword);
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }

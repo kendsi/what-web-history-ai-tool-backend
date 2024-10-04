@@ -9,6 +9,7 @@ public interface HistoryService {
     public HistoryDto saveHistory(HistoryDto historyDto);
     public HistoryDto getHistory(Long id);
     public HistoryDto updateHistory(Long id, int spentTime);
+    public void deleteHistory(Long id);
     public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime);
     public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String keyword);
     public int getKeywordFrequency(String keyword);
