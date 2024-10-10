@@ -12,7 +12,7 @@ public interface HistoryService {
     public List<String> extractKeywords(Long id);
     public void deleteHistory(Long id);
     public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime);
-    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String keyword);
+    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, List<String> keywords);
     public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword);
     public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword);
 }

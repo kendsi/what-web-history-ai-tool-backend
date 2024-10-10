@@ -1,6 +1,7 @@
 package cap.team3.what.model;
 
 import java.util.List;
+import java.util.List;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
@@ -23,19 +24,23 @@ public class History {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
+    @Column(length = 765)
     private String url;
 
     private int spentTime;
 
     private LocalDateTime visitTime;
 
-    @ElementCollection
-    @CollectionTable(name = "history_keywords", joinColumns = @JoinColumn(name = "history_id"))
-    @Column(name = "keyword")
-    private List<String> keywords;
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+        name = "history_keyword_mapping",
+        joinColumns = @JoinColumn(name = "history_id"),
+        inverseJoinColumns = @JoinColumn(name = "keyword_id")
+    )
+    private List<Keyword> keywords;
 
     @Builder
-    public History(String userId, String url, String title, String content, int spentTime, LocalDateTime visitTime, List<String> keywords) {
+    public History(String userId, String url, String title, String content, int spentTime, LocalDateTime visitTime, List<Keyword> keywords) {
         this.userId = userId;
         this.url = url;
         this.title = title;
