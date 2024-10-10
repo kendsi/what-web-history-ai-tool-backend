@@ -1,7 +1,6 @@
 package cap.team3.what.model;
 
 import java.util.List;
-import java.util.List;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
@@ -29,6 +28,8 @@ public class History {
 
     private int spentTime;
 
+    private int visitCount;
+
     private LocalDateTime visitTime;
 
     @ManyToMany(cascade = CascadeType.ALL)
@@ -40,12 +41,13 @@ public class History {
     private List<Keyword> keywords;
 
     @Builder
-    public History(String userId, String url, String title, String content, int spentTime, LocalDateTime visitTime, List<Keyword> keywords) {
+    public History(String userId, String url, String title, String content, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
         this.userId = userId;
         this.url = url;
         this.title = title;
         this.content = content;
         this.spentTime = spentTime;
+        this.visitCount = visitCount;
         this.visitTime = visitTime;
         this.keywords = keywords;
     }

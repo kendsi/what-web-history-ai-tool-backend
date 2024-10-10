@@ -32,7 +32,7 @@ public class WhatController {
     
 
     @GetMapping("/api/history")
-    public ResponseEntity<List<HistoryDto>> getHistoryByDate(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime) {
+    public ResponseEntity<List<HistoryDto>> getHistoryByTime(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime, @RequestParam(defaultValue = "visitTime") String orderBy) {
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);
         }
@@ -45,7 +45,7 @@ public class WhatController {
             throw new IllegalArgumentException("start time cannot be after end time");
         }
 
-        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime);
+        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime, orderBy);
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 
@@ -55,26 +55,26 @@ public class WhatController {
         return new ResponseEntity<>(savedHistory, HttpStatus.OK);
     }
     
-    @PutMapping("/api/history/{id}")
-    public ResponseEntity<HistoryDto> updateHistory(@PathVariable Long id, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
-        return new ResponseEntity<>(historyService.updateHistory(id, spentTime), HttpStatus.OK);
+    @PutMapping("/api/history")
+    public ResponseEntity<HistoryDto> updateHistory(@RequestParam String url, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
+        return new ResponseEntity<>(historyService.updateHistory(url, spentTime), HttpStatus.OK);
     }
 
-    @PutMapping("/api/history/{id}/keyword")
-    public ResponseEntity<List<String>> extractKeywords(@PathVariable Long id) {
-        List<String> keywords = historyService.extractKeywords(id);
+    @PutMapping("/api/history/keyword")
+    public ResponseEntity<List<String>> extractKeywords(@RequestParam String url) {
+        List<String> keywords = historyService.extractKeywords(url);
 
         return new ResponseEntity<>(keywords, HttpStatus.OK);
     }
 
-    @DeleteMapping("/api/history/{id}")
-    public ResponseEntity<String> deleteHistory(@PathVariable Long id) {
-        historyService.deleteHistory(id);
+    @DeleteMapping("/api/history")
+    public ResponseEntity<String> deleteHistory(@RequestParam String url) {
+        historyService.deleteHistory(url);
         return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
     }
     
-    @GetMapping("/api/history/search/keyword")
-    public ResponseEntity<List<HistoryDto>> getHistoryByDateAndKeyword(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime, @RequestParam List<String> keywords) {
+    @GetMapping("/api/history/keyword")
+    public ResponseEntity<List<HistoryDto>> getHistoryByTimeAndKeyword(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime, @RequestParam(defaultValue = "visitTime") String orderBy, @RequestParam List<String> keywords) {
 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);
@@ -88,7 +88,7 @@ public class WhatController {
             throw new IllegalArgumentException("start time cannot be after end time");
         }
 
-        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime, keywords);
+        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime, orderBy, keywords);
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 

@@ -29,23 +29,31 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional
     public HistoryDto saveHistory(HistoryDto historyDto) {
+        History history = historyRepository.findByUrl(historyDto.getUrl()).orElse(null);
 
-        History newHistory = convertToModel(historyDto);
+        if (history == null) {
+            History newHistory = convertToModel(historyDto);
+            newHistory.setVisitCount(1);
+            return convertToDto(historyRepository.save(newHistory));
+        }
+        
+        int oldVisitCount = history.getVisitCount();
+        history.setVisitCount(oldVisitCount + 1);
 
-        return convertToDto(historyRepository.save(newHistory));
+        return convertToDto(historyRepository.save(history));
     }
 
     @Override
-    public HistoryDto getHistory(Long id) {
-        History history = historyRepository.findById(id)
+    public HistoryDto getHistory(String url) {
+        History history = historyRepository.findByUrl(url)
                 .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         return convertToDto(history);
     }
 
     @Override
     @Transactional
-    public HistoryDto updateHistory(Long id, int spentTime) {
-        History history = historyRepository.findById(id)
+    public HistoryDto updateHistory(String url, int spentTime) {
+        History history = historyRepository.findByUrl(url)
                 .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
 
         int oldSpentTime = history.getSpentTime();
@@ -55,8 +63,8 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional
-    public List<String> extractKeywords(Long id) {
-        History history = historyRepository.findById(id)
+    public List<String> extractKeywords(String url) {
+        History history = historyRepository.findByUrl(url)
                 .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
 
         if (!history.getKeywords().isEmpty() && history.getKeywords() != null) {
@@ -78,19 +86,33 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional
-    public void deleteHistory(Long id) {
-        History history = historyRepository.findById(id)
+    public void deleteHistory(String url) {
+        History history = historyRepository.findByUrl(url)
                 .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         
         historyRepository.delete(history);
     }
 
     @Override
-    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime) {
-
-        List<History> histories = historyRepository.findByVisitTimeBetween(startTime, endTime);
+    @Transactional(readOnly = true)
+    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
+        
+        List<History> histories;
+        switch (orderBy) {
+            case "visitCount":
+                histories = historyRepository.findByVisitTimeBetweenOrderByVisitCount(startTime, endTime);
+                break;
+            case "spentTime":
+                histories = historyRepository.findByVisitTimeBetweenOrderBySpentTime(startTime, endTime);
+                break;
+            case "visitTime":
+            default:
+                histories = historyRepository.findByVisitTimeBetweenOrderByVisitTime(startTime, endTime);
+                break;
+        }
+        
         if (histories.isEmpty()) {
-            throw new HistoryNotFoundException("No histories in the time");
+            throw new HistoryNotFoundException("No corresponding histories in the given time range");
         }
 
         return histories.stream()
@@ -99,11 +121,25 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, List<String> keywords) {
+    @Transactional(readOnly = true)
+    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy, List<String> keywords) {
 
-        List<History> histories = historyRepository.findByVisitTimeBetweenAndKeywords(startTime, endTime, keywords, Long.valueOf(keywords.size()));
+        List<History> histories;
+        switch (orderBy) {
+            case "visitCount":
+                histories = historyRepository.findByVisitTimeBetweenAndKeywordsOrderByVisitCount(startTime, endTime, keywords, Long.valueOf(keywords.size()));
+                break;
+            case "spentTime":
+                histories = historyRepository.findByVisitTimeBetweenAndKeywordsOrderBySpentTime(startTime, endTime, keywords, Long.valueOf(keywords.size()));
+                break;
+            case "visitTime":
+            default:
+                histories = historyRepository.findByVisitTimeBetweenAndKeywordsOrderByVisitTime(startTime, endTime, keywords, Long.valueOf(keywords.size()));
+                break;
+        }
+        
         if (histories.isEmpty()) {
-            throw new HistoryNotFoundException("No corresponding histories that matches with keyword in the time");
+            throw new HistoryNotFoundException("No corresponding histories that match the keywords in the given time range");
         }
 
         return histories.stream()
@@ -112,6 +148,7 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
         List<History> histories = historyRepository.findByKeyword(keyword);
         if (histories.isEmpty()) {
@@ -121,6 +158,7 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
         List<History> histories = historyRepository.findByKeyword(keyword);
         if (histories.isEmpty()) {
@@ -151,6 +189,7 @@ public class HistoryServiceImpl implements HistoryService {
                       .content(historyDto.getContent())
                       .url(historyDto.getUrl())
                       .spentTime(historyDto.getSpentTime())
+                      .visitCount(historyDto.getVisitCount())
                       .visitTime(historyDto.getVisitTime())
                       .keywords(keywords)
                       .build();
@@ -174,6 +213,7 @@ public class HistoryServiceImpl implements HistoryService {
                          .content(history.getContent())
                          .url(history.getUrl())
                          .spentTime(history.getSpentTime())
+                         .visitCount(history.getVisitCount())
                          .visitTime(history.getVisitTime())
                          .keywords(keywords)
                          .build();
