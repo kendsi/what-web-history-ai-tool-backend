@@ -9,8 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cap.team3.what.dto.HistoryDto;
+import cap.team3.what.exception.HistoryNotFoundException;
 import cap.team3.what.model.History;
+import cap.team3.what.model.Keyword;
 import cap.team3.what.repository.HistoryRepository;
+import cap.team3.what.repository.KeywordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class HistoryServiceImpl implements HistoryService {
 
     private final HistoryRepository historyRepository;
+    private final KeywordRepository keywordRepository;
     private final AIService aiService;
     
     @Override
@@ -34,7 +38,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     public HistoryDto getHistory(Long id) {
         History history = historyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         return convertToDto(history);
     }
 
@@ -42,22 +46,41 @@ public class HistoryServiceImpl implements HistoryService {
     @Transactional
     public HistoryDto updateHistory(Long id, int spentTime) {
         History history = historyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
 
-        history.setSpentTime(spentTime);
-        if (history.getKeywords().isEmpty()) {
-            List<String> keywords = aiService.extractKeywords(history.getContent());
-            history.setKeywords(new ArrayList<>(keywords));
-        }
-            
+        int oldSpentTime = history.getSpentTime();
+        history.setSpentTime(oldSpentTime + spentTime);
         return convertToDto(historyRepository.save(history));
+    }
+
+    @Override
+    @Transactional
+    public List<String> extractKeywords(Long id) {
+        History history = historyRepository.findById(id)
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
+
+        if (!history.getKeywords().isEmpty() && history.getKeywords() != null) {
+            
+            throw new RuntimeException("Keyword already extracted for url: " + history.getUrl());
+        }
+
+        List<String> extractedKeywords = aiService.extractKeywords(history.getContent());
+        List<Keyword> keywords = extractedKeywords.stream()
+            .map(keywordText -> keywordRepository.findByKeyword(keywordText)
+                    .orElseGet(() -> keywordRepository.save(new Keyword(keywordText))))
+            .collect(Collectors.toList());
+
+        history.setKeywords(keywords);
+        historyRepository.save(history);
+
+        return extractedKeywords;
     }
 
     @Override
     @Transactional
     public void deleteHistory(Long id) {
         History history = historyRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No such history in DB"));
+                .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         
         historyRepository.delete(history);
     }
@@ -67,7 +90,7 @@ public class HistoryServiceImpl implements HistoryService {
 
         List<History> histories = historyRepository.findByVisitTimeBetween(startTime, endTime);
         if (histories.isEmpty()) {
-            throw new RuntimeException("No histories in the time");
+            throw new HistoryNotFoundException("No histories in the time");
         }
 
         return histories.stream()
@@ -76,11 +99,11 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
+    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, List<String> keywords) {
 
-        List<History> histories = historyRepository.findByVisitTimeBetweenAndKeywordsContaining(startTime, endTime, keyword);
+        List<History> histories = historyRepository.findByVisitTimeBetweenAndKeywords(startTime, endTime, keywords, Long.valueOf(keywords.size()));
         if (histories.isEmpty()) {
-            throw new RuntimeException("No corresponding histories that matches with keyword in the time");
+            throw new HistoryNotFoundException("No corresponding histories that matches with keyword in the time");
         }
 
         return histories.stream()
@@ -89,8 +112,8 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public int getKeywordFrequency(String keyword) {
-        List<History> histories = historyRepository.findByKeywordsContaining(keyword);
+    public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
+        List<History> histories = historyRepository.findByKeyword(keyword);
         if (histories.isEmpty()) {
             return 0;
         }
@@ -98,10 +121,10 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public int getTotalSpentTime(String keyword) {
-        List<History> histories = historyRepository.findByKeywordsContaining(keyword);
+    public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
+        List<History> histories = historyRepository.findByKeyword(keyword);
         if (histories.isEmpty()) {
-            throw new RuntimeException("No such history in DB");
+            throw new HistoryNotFoundException("No such history in DB");
             
         }
         int totalSpentTime = histories.stream()
@@ -112,25 +135,47 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     private History convertToModel(HistoryDto historyDto) {
+
+        List<Keyword> keywords;
+
+        if (historyDto.getKeywords() != null) {
+            keywords = historyDto.getKeywords().stream()
+                .map(keywordText -> Keyword.builder().keyword(keywordText).build())
+                .collect(Collectors.toList());
+        } else {
+            keywords = new ArrayList<>();
+        }
+    
         return History.builder()
                       .title(historyDto.getTitle())
                       .content(historyDto.getContent())
-                      .domain(historyDto.getDomain())
+                      .url(historyDto.getUrl())
                       .spentTime(historyDto.getSpentTime())
                       .visitTime(historyDto.getVisitTime())
-                      .keywords(historyDto.getKeywords())
+                      .keywords(keywords)
                       .build();
     }
-
+    
     private HistoryDto convertToDto(History history) {
+
+        List<String> keywords;
+
+        if (history.getKeywords() != null) {
+            keywords = history.getKeywords().stream()
+                .map(Keyword::getKeyword)
+                .collect(Collectors.toList());
+        } else {
+            keywords = new ArrayList<>();
+        }
+    
         return HistoryDto.builder()
                          .id(history.getId())
                          .title(history.getTitle())
                          .content(history.getContent())
-                         .domain(history.getDomain())
+                         .url(history.getUrl())
                          .spentTime(history.getSpentTime())
                          .visitTime(history.getVisitTime())
-                         .keywords(history.getKeywords())
+                         .keywords(keywords)
                          .build();
     }
 }

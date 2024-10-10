@@ -25,9 +25,27 @@ public class WhatController {
 
     private final HistoryService historyService;
 
+    @GetMapping("/api")
+    public ResponseEntity<?> healthCheck() {
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+    
+
     @GetMapping("/api/history")
-    public ResponseEntity<List<HistoryDto>> getHistoryByDate(@RequestParam(value = "days", defaultValue = "7") int days) {
-        List<HistoryDto> histories = historyService.getHistoriesByTime(LocalDateTime.now().minusDays(days), LocalDateTime.now());
+    public ResponseEntity<List<HistoryDto>> getHistoryByDate(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime) {
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+
+        if (endTime == null) {
+            endTime = LocalDateTime.now();
+        }
+
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+
+        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime);
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 
@@ -37,30 +55,76 @@ public class WhatController {
         return new ResponseEntity<>(savedHistory, HttpStatus.OK);
     }
     
-    @PutMapping("/api/history")
-    public ResponseEntity<HistoryDto> generateKeywords(@RequestParam Long id, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
+    @PutMapping("/api/history/{id}")
+    public ResponseEntity<HistoryDto> updateHistory(@PathVariable Long id, @RequestParam(value = "spentTime", defaultValue = "0") int spentTime) {
         return new ResponseEntity<>(historyService.updateHistory(id, spentTime), HttpStatus.OK);
     }
 
-    @DeleteMapping("/api/history")
-    public ResponseEntity<String> deleteHistory(@RequestParam Long id) {
+    @PutMapping("/api/history/{id}/keyword")
+    public ResponseEntity<List<String>> extractKeywords(@PathVariable Long id) {
+        List<String> keywords = historyService.extractKeywords(id);
+
+        return new ResponseEntity<>(keywords, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/api/history/{id}")
+    public ResponseEntity<String> deleteHistory(@PathVariable Long id) {
         historyService.deleteHistory(id);
         return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
     }
     
-    @GetMapping("/api/history/{keyword}")
-    public ResponseEntity<List<HistoryDto>> getHistoryByDateAndKeyword(@RequestParam(value = "days", defaultValue = "7") int days, @PathVariable String keyword) {
-        List<HistoryDto> histories = historyService.getHistoriesByTime(LocalDateTime.now().minusDays(days), LocalDateTime.now(), keyword);
+    @GetMapping("/api/history/search/keyword")
+    public ResponseEntity<List<HistoryDto>> getHistoryByDateAndKeyword(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime, @RequestParam List<String> keywords) {
+
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+
+        if (endTime == null) {
+            endTime = LocalDateTime.now();
+        }
+
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+
+        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime, keywords);
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 
-    @GetMapping("/api/statistics/{keyword}/frequency")
-    public int getKeywordFrequency(@PathVariable String keyword) {
-        return historyService.getKeywordFrequency(keyword);
+    @GetMapping("/api/history/statistics/{keyword}/frequency")
+    public int getKeywordFrequency(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime, @PathVariable String keyword) {
+
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+
+        if (endTime == null) {
+            endTime = LocalDateTime.now();
+        }
+
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+
+        return historyService.getKeywordFrequency(startTime, endTime, keyword);
     }
 
-    @GetMapping("/api/statistics/{keyword}/spent_time")
-    public int getTotalSpentTime(@PathVariable String keyword) {
-        return historyService.getTotalSpentTime(keyword);
+    @GetMapping("/api/history/statistics/{keyword}/spent_time")
+    public int getTotalSpentTime(@RequestParam LocalDateTime startTime, @RequestParam LocalDateTime endTime, @PathVariable String keyword) {
+
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+
+        if (endTime == null) {
+            endTime = LocalDateTime.now();
+        }
+
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+
+        return historyService.getTotalSpentTime(startTime, endTime, keyword);
     }
 }
