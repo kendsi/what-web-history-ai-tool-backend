@@ -20,6 +20,8 @@ public class HistoryDto {
     private int visitCount;
     private LocalDateTime visitTime;
     private List<String> keywords;
+
+    public HistoryDto() {}
     
     @Builder
     public HistoryDto(Long id, String userId, String title, String content, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<String> keywords) {

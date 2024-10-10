@@ -25,10 +25,15 @@ public interface HistoryRepository extends JpaRepository<History, Long> {
                                                       @Param("endTime") LocalDateTime endTime);
 
 
-    @Query("SELECT h FROM History h WHERE h.visitTime BETWEEN :startTime AND :endTime ORDER BY h.visitTime ASC")
+    @Query("SELECT h FROM History h WHERE h.visitTime BETWEEN :startTime AND :endTime ORDER BY h.visitTime DESC")
     List<History> findByVisitTimeBetweenOrderByVisitTime(@Param("startTime") LocalDateTime startTime,
                                                         @Param("endTime") LocalDateTime endTime);
 
+    @Query("SELECT h FROM History h JOIN h.keywords k WHERE h.visitTime BETWEEN :startTime AND :endTime AND k.keyword = :keyword")
+    List<History> findByVisitTimeBetweenAndKeyword(@Param("startTime") LocalDateTime startTime, 
+                                                   @Param("endTime") LocalDateTime endTime, 
+                                                   @Param("keyword") String keyword);
+                                                   
     @Query("SELECT h FROM History h JOIN h.keywords k " +
            "WHERE h.visitTime BETWEEN :startTime AND :endTime " +
            "AND k.keyword IN :keywords " +
@@ -66,7 +71,7 @@ public interface HistoryRepository extends JpaRepository<History, Long> {
        "AND k.keyword IN :keywords " +
        "GROUP BY h " +
        "HAVING COUNT(DISTINCT k.keyword) = :keywordCount " +
-       "ORDER BY h.visitTime ASC")
+       "ORDER BY h.visitTime DESC")
     List<History> findByVisitTimeBetweenAndKeywordsOrderByVisitTime(@Param("startTime") LocalDateTime startTime,
                                                                 @Param("endTime") LocalDateTime endTime,
                                                                 @Param("keywords") List<String> keywords,
