@@ -18,7 +18,7 @@ public class UserServiceImpl implements UserService{
 
     @Override
     @Transactional
-    public String handleGoogleLogin(String email) {
+    public String login(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
 
         if (user == null) {
@@ -28,6 +28,17 @@ public class UserServiceImpl implements UserService{
         }
         
         return jwtTokenProvider.createToken(user.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void logout(String token) {
+
+        if (jwtTokenProvider.validateToken(token)) {
+            jwtTokenProvider.blacklistToken(token);
+        } else {
+            throw new IllegalArgumentException("Invalid token");
+        }
     }
 
     @Override

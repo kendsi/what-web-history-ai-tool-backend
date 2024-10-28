@@ -40,12 +40,12 @@ public class WhatController {
     
     @GetMapping("/api/history")
     public ResponseEntity<List<HistoryDto>> getHistoryByTime(
-                @RequestParam LocalDateTime startTime,
-                @RequestParam LocalDateTime endTime,
-                @RequestParam(defaultValue = "visitTime") String orderBy) {
+            @RequestParam(name = "startTime") LocalDateTime startTime,
+            @RequestParam(name = "endTime") LocalDateTime endTime,
+            @RequestParam(name = "orderBy", defaultValue = "visitTime") String orderBy) {
+ 
 
         if (startTime == null) {
-            log.info("null!!!");
             startTime = LocalDateTime.now().minusDays(7);
         }
         if (endTime == null) {
@@ -61,10 +61,10 @@ public class WhatController {
 
     @GetMapping("/api/history/keyword")
     public ResponseEntity<List<HistoryDto>> getHistoryByTimeAndKeyword(
-                @RequestParam LocalDateTime startTime,
-                @RequestParam LocalDateTime endTime,
-                @RequestParam(defaultValue = "visitTime") String orderBy,
-                @RequestParam List<String> keywords) {
+                @RequestParam(name = "startTime") LocalDateTime startTime,
+                @RequestParam(name = "endTime") LocalDateTime endTime,
+                @RequestParam(name = "orderBy", defaultValue = "visitTime") String orderBy,
+                @RequestParam(name = "keywords") List<String> keywords) {
                 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);
@@ -91,7 +91,9 @@ public class WhatController {
     }
     
     @PutMapping("/api/history")
-    public ResponseEntity<HistoryDto> updateHistory(@RequestParam String url, @RequestParam(defaultValue = "0") int spentTime) {
+    public ResponseEntity<HistoryDto> updateHistory(
+                @RequestParam(name = "url") String url, 
+                @RequestParam(name = "spentTime", defaultValue = "0") int spentTime) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
@@ -101,7 +103,7 @@ public class WhatController {
     }
 
     @PutMapping("/api/history/keyword")
-    public ResponseEntity<List<String>> extractKeywords(@RequestParam String url) {
+    public ResponseEntity<List<String>> extractKeywords(@RequestParam(name = "url") String url) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
@@ -111,7 +113,7 @@ public class WhatController {
     }
 
     @DeleteMapping("/api/history")
-    public ResponseEntity<String> deleteHistory(@RequestParam String url) {
+    public ResponseEntity<String> deleteHistory(@RequestParam(name = "url") String url) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
@@ -123,9 +125,9 @@ public class WhatController {
     
     @GetMapping("/api/history/statistics/{keyword}/frequency")
     public int getKeywordFrequency(
-                @RequestParam LocalDateTime startTime,
-                @RequestParam LocalDateTime endTime,
-                @PathVariable String keyword) {
+                @RequestParam(name = "startTime") LocalDateTime startTime,
+                @RequestParam(name = "endTime") LocalDateTime endTime,
+                @PathVariable(name = "keyword") String keyword) {
 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);
@@ -142,9 +144,9 @@ public class WhatController {
 
     @GetMapping("/api/history/statistics/{keyword}/spent_time")
     public int getTotalSpentTime(
-                @RequestParam LocalDateTime startTime,
-                @RequestParam LocalDateTime endTime,
-                @PathVariable String keyword) {
+                @RequestParam(name = "startTime") LocalDateTime startTime,
+                @RequestParam(name = "endTime") LocalDateTime endTime,
+                @PathVariable(name = "keyword") String keyword) {
 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);

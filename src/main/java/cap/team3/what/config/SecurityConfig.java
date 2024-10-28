@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -36,15 +35,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login").permitAll()  // 메인 페이지와 로그인 경로 허용
+                .requestMatchers("/", "/login", "/api/auth/oauth2/google").permitAll()  // 메인 페이지와 로그인 경로 허용
                 .anyRequest().authenticated()                // 그 외 모든 요청은 인증 필요
             )
             .oauth2Login(oauth -> oauth
                 .defaultSuccessUrl("/api/auth/oauth2/google", true) // OAuth2 로그인 성공 후 리디렉션
-            );
-
-        // JWT 인증 필터 추가
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

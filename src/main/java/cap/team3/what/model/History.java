@@ -29,7 +29,7 @@ public class History {
     private int visitCount;
     private LocalDateTime visitTime;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "history_keyword_mapping",
         joinColumns = @JoinColumn(name = "history_id"),

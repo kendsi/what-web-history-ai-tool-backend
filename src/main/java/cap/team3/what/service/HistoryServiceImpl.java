@@ -34,8 +34,8 @@ public class HistoryServiceImpl implements HistoryService {
     public HistoryDto saveHistory(HistoryDto historyDto) {
 
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
         User user = userService.getUserByEmail(email);
+        log.info(user.getId().toString());
 
         History history = historyRepository.findByUserAndUrl(user, historyDto.getUrl()).orElse(null);
 
@@ -46,8 +46,7 @@ public class HistoryServiceImpl implements HistoryService {
             return convertToDto(historyRepository.save(newHistory));
         }
         
-        int oldVisitCount = history.getVisitCount();
-        history.setVisitCount(oldVisitCount + 1);
+        history.setVisitCount(history.getVisitCount() + 1);
         history.setVisitTime(historyDto.getVisitTime());
 
         return convertToDto(historyRepository.save(history));
@@ -119,6 +118,12 @@ public class HistoryServiceImpl implements HistoryService {
             .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         
         historyRepository.delete(history);
+
+        history.getKeywords().forEach(keyword -> {
+            if (keywordRepository.countByKeywordsContains(keyword) == 0L) { // 다른 History와 연결되지 않은 경우만 삭제
+                keywordRepository.delete(keyword);
+            }
+        });
     }
 
     @Override
@@ -241,6 +246,7 @@ public class HistoryServiceImpl implements HistoryService {
     
         return HistoryDto.builder()
                          .id(history.getId())
+                         .email(history.getUser().getEmail())
                          .title(history.getTitle())
                          .content(history.getContent())
                          .url(history.getUrl())
