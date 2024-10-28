@@ -30,6 +30,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public final ResponseEntity<Object> handleUserNotFoundException(UserNotFoundException ex, WebRequest request) {
+        log.error("UserNotFoundException occurred: {}", ex.getMessage(), ex);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     // 기본적인 예외 처리
     @ExceptionHandler(RuntimeException.class)
     public final ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {

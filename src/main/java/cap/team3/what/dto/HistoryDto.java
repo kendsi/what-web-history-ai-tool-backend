@@ -11,7 +11,7 @@ public class HistoryDto {
 
     private Long id;
 
-    private String userId;
+    private String email;
     private String title;
     private String content;
     private String url;
@@ -20,11 +20,13 @@ public class HistoryDto {
     private int visitCount;
     private LocalDateTime visitTime;
     private List<String> keywords;
+
+    public HistoryDto() {}
     
     @Builder
-    public HistoryDto(Long id, String userId, String title, String content, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<String> keywords) {
+    public HistoryDto(Long id, String email, String title, String content, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<String> keywords) {
         this.id = id;
-        this.userId = userId;
+        this.email = email;
         this.title = title;
         this.content = content;
         this.url = url;
