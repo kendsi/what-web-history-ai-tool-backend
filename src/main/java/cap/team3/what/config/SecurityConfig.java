@@ -55,7 +55,7 @@ public class SecurityConfig {
         return ClientRegistration.withRegistrationId("google")
                 .clientId(clientId)
                 .clientSecret(clientSecret)
-                .redirectUri("http://localhost:8080/login/oauth2/code/google")
+                .redirectUri("https://capstonepractice.site/login/oauth2/code/google")
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .scope("profile", "email")
                 .authorizationUri("https://accounts.google.com/o/oauth2/auth")
