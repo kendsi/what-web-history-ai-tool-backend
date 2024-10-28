@@ -7,9 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
 import org.springframework.ai.chat.messages.*;
+import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 
+@Configuration
 public class MessageDeserializer extends StdDeserializer<Message> {
 
     public MessageDeserializer() {
