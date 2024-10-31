@@ -16,23 +16,20 @@ public class History {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     private String title;
-
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
-
     @Column(length = 765)
     private String url;
-
     private int spentTime;
-
     private int visitCount;
-
     private LocalDateTime visitTime;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "history_keyword_mapping",
         joinColumns = @JoinColumn(name = "history_id"),
@@ -41,8 +38,8 @@ public class History {
     private List<Keyword> keywords;
 
     @Builder
-    public History(String userId, String url, String title, String content, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
-        this.userId = userId;
+    public History(User user, String url, String title, String content, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
+        this.user = user;
         this.url = url;
         this.title = title;
         this.content = content;

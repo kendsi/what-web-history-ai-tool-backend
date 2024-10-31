@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 public class ObjectMapperConfig {
 
     public static ObjectMapper createObjectMapper() {
