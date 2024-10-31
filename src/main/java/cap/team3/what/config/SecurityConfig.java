@@ -35,7 +35,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/api/auth/oauth2/google").permitAll()  // 메인 페이지와 로그인 경로 허용
+                .requestMatchers("/", "/login", "/api/auth/oauth2/google", "/favicon.ico").permitAll()  // 메인 페이지와 로그인 경로 허용
                 .anyRequest().authenticated()                // 그 외 모든 요청은 인증 필요
             )
             .oauth2Login(oauth -> oauth
