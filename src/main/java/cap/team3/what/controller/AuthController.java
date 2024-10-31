@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import cap.team3.what.dto.AuthResponse;
 import cap.team3.what.service.UserService;
 
 import java.util.Map;
@@ -26,13 +25,16 @@ public class AuthController {
     private final UserService userService;
 
     @GetMapping("oauth2/google")
-    public ResponseEntity<AuthResponse> googleLogin(OAuth2AuthenticationToken authentication) {
+    public ResponseEntity<?> googleLogin(OAuth2AuthenticationToken authentication) {
         Map<String, Object> userAttributes = authentication.getPrincipal().getAttributes();
         String email = (String) userAttributes.get("email");
 
         String token = userService.login(email);
 
-        return new ResponseEntity<>(new AuthResponse(token), HttpStatus.OK);
+        return ResponseEntity
+                .ok()
+                .header("Authorization", "Bearer " + token)
+                .build();
     }
 
     @PostMapping("logout")

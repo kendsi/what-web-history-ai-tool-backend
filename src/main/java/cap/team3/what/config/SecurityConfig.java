@@ -35,7 +35,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/api/auth/oauth2/google").permitAll()  // 메인 페이지와 로그인 경로 허용
+                .requestMatchers("/", "/login", "/api/auth/oauth2/google", "/favicon.ico").permitAll()  // 메인 페이지와 로그인 경로 허용
                 .anyRequest().authenticated()                // 그 외 모든 요청은 인증 필요
             )
             .oauth2Login(oauth -> oauth
@@ -55,7 +55,7 @@ public class SecurityConfig {
         return ClientRegistration.withRegistrationId("google")
                 .clientId(clientId)
                 .clientSecret(clientSecret)
-                .redirectUri("http://localhost:8080/login/oauth2/code/google")
+                .redirectUri("https://capstonepractice.site/login/oauth2/code/google")
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .scope("profile", "email")
                 .authorizationUri("https://accounts.google.com/o/oauth2/auth")
