@@ -1,6 +1,8 @@
 package cap.team3.what.service;
 
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -11,10 +13,12 @@ import cap.team3.what.exception.UnauthorizedException;
 import cap.team3.what.model.User;
 import cap.team3.what.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
@@ -24,19 +28,23 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public String login(String idToken) {
+    public String login(String accessToken) {
         // Google OAuth2 토큰 검증
-        String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
-        ResponseEntity<Map<String, String>> response = restTemplate.exchange(
-            url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, String>>() {});
+        String url = "https://www.googleapis.com/oauth2/v3/userinfo";
+        log.info(accessToken);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
 
-        Map<String, String> tokenInfo = response.getBody();
-        
-        if (tokenInfo == null || !tokenInfo.containsKey("email")) {
-            throw new UnauthorizedException("Invalid Google token");
-        }
+        HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String email = tokenInfo.get("email");
+        ResponseEntity<Map> response = restTemplate.exchange(
+            url,
+            HttpMethod.GET,
+            entity,
+            Map.class
+        );
+
+        String email = (String) response.getBody().get("email");
 
         User user = userService.getUserByEmail(email);
 

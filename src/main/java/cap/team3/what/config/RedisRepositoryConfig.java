@@ -24,7 +24,7 @@ public class RedisRepositoryConfig {
     private String redisPassword;
 
     @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
+    protected RedisConnectionFactory redisConnectionFactory() {
 
         RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
         redisStandaloneConfiguration.setHostName(redisHost);
@@ -34,7 +34,7 @@ public class RedisRepositoryConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
+    protected RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory());
         redisTemplate.setKeySerializer(new StringRedisSerializer());

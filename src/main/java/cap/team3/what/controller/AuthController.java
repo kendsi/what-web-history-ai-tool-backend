@@ -25,14 +25,11 @@ public class AuthController {
     private final AuthService authService;
 
     @GetMapping("oauth2/google")
-    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> request) {
+    public ResponseEntity<String> googleLogin(@RequestBody Map<String, String> request) {
         String idToken = request.get("token");
         String jwtToken = authService.login(idToken);
 
-        return ResponseEntity
-                .ok()
-                .header("Authorization", "Bearer " + jwtToken)
-                .build();
+        return new ResponseEntity<>(jwtToken, HttpStatus.OK);
     }
 
     @PostMapping("logout")

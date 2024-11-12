@@ -3,6 +3,7 @@ package cap.team3.what.config;
 // import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -31,9 +32,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // JWT 인증이므로 세션 사용 안 함
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/api/auth/google", "/favicon.ico").permitAll()  // 메인 페이지와 로그인 경로 허용
+                .requestMatchers("/", "/api/auth/oauth2/google", "/favicon.ico").permitAll()  // 메인 페이지와 로그인 경로 허용
                 .anyRequest().authenticated()  // 그 외 모든 요청은 인증 필요
             )
+            .formLogin(Customizer.withDefaults())  // 기본 로그인 페이지 비활성화
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // JWT 필터 추가
 
         return http.build();
