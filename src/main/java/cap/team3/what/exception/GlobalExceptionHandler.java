@@ -41,10 +41,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 기본적인 예외 처리
-    @ExceptionHandler(RuntimeException.class)
-    public final ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {
-        log.error("RuntimeException occurred: {}", ex.getMessage(), ex);
+    @ExceptionHandler(UnauthorizedException.class)
+    public final ResponseEntity<Object> handleUnauthorizedException(UnauthorizedException ex, WebRequest request) {
+        log.error("UnauthorizedException occurred: {}", ex.getMessage(), ex);
 
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
@@ -72,6 +71,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", "Failed to read the prompt file. Please check the file path and try again.");
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // 기본적인 예외 처리
+    @ExceptionHandler(RuntimeException.class)
+    public final ResponseEntity<Object> handleRuntimeException(RuntimeException ex, WebRequest request) {
+        log.error("RuntimeException occurred: {}", ex.getMessage(), ex);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
