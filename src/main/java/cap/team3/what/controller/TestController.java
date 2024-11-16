@@ -100,14 +100,13 @@ public class TestController {
 
         List<HistoryDto> result;
 
-        result = historyService.searchHistory(query);
-        // if (startTime == null || endTime == null) {
-        //     log.info("No visitTime criteria");
-        //     result = historyService.searchHistory(query);
-        // }
-        // else {
-        //     result = historyService.searchHistory(startTime, endTime, query);
-        // }
+        if (startTime == null || endTime == null) {
+            log.info("No visitTime criteria");
+            result = historyService.searchHistory(query);
+        }
+        else {
+            result = historyService.searchHistory(startTime, endTime, query);
+        }
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

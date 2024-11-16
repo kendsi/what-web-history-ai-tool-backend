@@ -18,8 +18,10 @@ import io.pinecone.clients.Index;
 import io.pinecone.clients.Pinecone;
 import io.pinecone.unsigned_indices_model.QueryResponseWithUnsignedIndices;
 import io.pinecone.unsigned_indices_model.ScoredVectorWithUnsignedIndices;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class PineconeServiceImpl implements PineconeService {
 
     private final Pinecone pc;
@@ -40,6 +42,7 @@ public class PineconeServiceImpl implements PineconeService {
             "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
             "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
             "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
+            "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
             "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
             "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
             "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
@@ -64,6 +67,7 @@ public class PineconeServiceImpl implements PineconeService {
             "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
             "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
             "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
+            "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
             "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
             "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
             "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
@@ -106,7 +110,7 @@ public class PineconeServiceImpl implements PineconeService {
             null, // 네임스페이스
             filter, // 필터 조건
             true, // 메타데이터 포함 여부
-            false // 벡터 값 포함 여부
+            true // 벡터 값 포함 여부
         );
 
         return queryResponse.getMatchesList().stream()
@@ -114,12 +118,50 @@ public class PineconeServiceImpl implements PineconeService {
             .collect(Collectors.toList());
     }
 
-    private ListValue toListValue(List<String> keywords) {
-        ListValue.Builder listValueBuilder = ListValue.newBuilder();
-        for (String keyword : keywords) {
-            listValueBuilder.addValues(Value.newBuilder().setStringValue(keyword).build());
-        }
-        return listValueBuilder.build();
+    @Override
+    public List<VectorMetaData> searchDocuments(String query, String email, int topK, LocalDateTime startTime, LocalDateTime endTime) {
+        List<Float> embeddingVector = embeddingService.embeddingVector(query);
+
+        // visitTime 범위 조건 생성
+        Struct visitTimeCondition = Struct.newBuilder()
+            .putFields("$gte", Value.newBuilder()
+                .setNumberValue((double) startTime.toEpochSecond(ZoneOffset.UTC))
+                .build())
+            .putFields("$lte", Value.newBuilder()
+                .setNumberValue((double) endTime.toEpochSecond(ZoneOffset.UTC))
+                .build())
+            .build();
+
+        // 전체 필터 생성
+        Struct filter = Struct.newBuilder()
+            .putFields("email", Value.newBuilder()
+                .setStructValue(
+                    Struct.newBuilder()
+                        .putFields("$eq", Value.newBuilder()
+                            .setStringValue(email)
+                            .build()
+                        ).build()
+                ).build())
+            .putFields("visitTime", Value.newBuilder()
+                .setStructValue(visitTimeCondition)
+                .build())
+            .build();
+
+        QueryResponseWithUnsignedIndices queryResponse = index.query(
+            topK, // 검색할 유사 벡터 개수
+            embeddingVector, // 검색에 사용할 벡터
+            null, // Score 임계값
+            null, // 필드 선택
+            null, // Sparse 필드
+            null, // 네임스페이스
+            filter, // 필터 조건
+            true, // 메타데이터 포함 여부
+            true // 벡터 값 포함 여부
+        );
+
+        return queryResponse.getMatchesList().stream()
+            .map(this::convertToVectorMetaData)
+            .collect(Collectors.toList());
     }
 
     private VectorMetaData convertToVectorMetaData(ScoredVectorWithUnsignedIndices result) {
@@ -146,5 +188,13 @@ public class PineconeServiceImpl implements PineconeService {
         ));
     
         return metaData;
+    }
+
+    private ListValue toListValue(List<String> keywords) {
+        ListValue.Builder listValueBuilder = ListValue.newBuilder();
+        for (String keyword : keywords) {
+            listValueBuilder.addValues(Value.newBuilder().setStringValue(keyword).build());
+        }
+        return listValueBuilder.build();
     }
 }

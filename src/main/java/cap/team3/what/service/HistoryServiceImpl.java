@@ -56,7 +56,6 @@ String email = "test@example.com";
             metaData.setShortSummary(analyzedContent.getShortSummary());
             metaData.setKeywords(analyzedContent.getKeywords());
             metaData.setVisitCount(1);
-            metaData.setSpentTime(0);
             metaData.setVisitTime(LocalDateTime.now());
             metaData.setId(pineconeService.saveDocument(metaData));
 
@@ -144,6 +143,22 @@ String email = "test@example.com";
             .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
 
         history.setSpentTime(history.getSpentTime() + spentTime);
+
+        VectorMetaData metaData = new VectorMetaData();
+        metaData.setId(history.getVectorId());
+        metaData.setEmail(email);
+        metaData.setKeywords(history.getKeywords().stream()
+                                                .map(Keyword::getKeyword)
+                                                .collect(Collectors.toList()));
+        metaData.setLongSummary(history.getContent());
+        metaData.setShortSummary(history.getShortSummary());
+        metaData.setSpentTime(history.getSpentTime());
+        metaData.setUrl(history.getUrl());
+        metaData.setVisitCount(history.getVisitCount());
+        metaData.setVisitTime(history.getVisitTime());
+
+        pineconeService.updateDocument(metaData);
+
         return convertToDto(historyRepository.save(history));
     }
 
@@ -182,18 +197,18 @@ String email = "test@example.com";
                         .toList();
     }
 
-//     @Override
-//     public List<HistoryDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
-//         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-// String email = "test@example.com";
+    @Override
+    public List<HistoryDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
 
-//         List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, 10, email, startTime, endTime);
+        List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email,10, startTime, endTime);
 
-//         return metaDatas.stream()
-//                         .map(VectorMetaData::getUrl) // URL 추출
-//                         .map(this::getHistoryByUrl) // URL로 History 검색
-//                         .toList();
-//     }
+        return metaDatas.stream()
+                        .map(VectorMetaData::getUrl) // URL 추출
+                        .map(this::getHistoryByUrl) // URL로 History 검색
+                        .toList();
+    }
 
 
     @Override
@@ -280,13 +295,13 @@ String email = "test@example.com";
         metaData.setKeywords(keywords);
         metaData.setUrl(history.getUrl());
         metaData.setVisitTime(history.getVisitTime());
+        metaData.setSpentTime(history.getSpentTime());
+        metaData.setVisitCount(history.getVisitCount());
     
         return HistoryDto.builder()
                          .id(history.getId())
                          .content("")
                          .metaData(metaData)
-                         .spentTime(history.getSpentTime())
-                         .visitCount(history.getVisitCount())
                          .build();
     }
 }
