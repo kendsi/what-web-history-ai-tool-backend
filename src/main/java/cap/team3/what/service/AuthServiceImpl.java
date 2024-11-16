@@ -1,6 +1,5 @@
 package cap.team3.what.service;
 
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import cap.team3.what.exception.UnauthorizedException;
 import cap.team3.what.model.User;
 import cap.team3.what.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -46,15 +44,14 @@ public class AuthServiceImpl implements AuthService {
 
         String email = (String) response.getBody().get("email");
 
-        User user = userService.getUserByEmail(email);
-
-        if (user == null) {
+        try {
+            User user = userService.getUserByEmail(email);
+            return jwtTokenProvider.createToken(user.getEmail());
+        } catch (Exception e) {
             User newUser = new User(email);
             userService.registerUser(newUser);
             return jwtTokenProvider.createToken(email);
         }
-        
-        return jwtTokenProvider.createToken(user.getEmail());
     }
 
     @Override

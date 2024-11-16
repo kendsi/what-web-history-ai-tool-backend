@@ -13,9 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -27,17 +30,28 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    private final List<AntPathRequestMatcher> excludePaths = Arrays.asList(
+        new AntPathRequestMatcher("/login"),
+        new AntPathRequestMatcher("/api/auth/oauth2/google"),
+        new AntPathRequestMatcher("/favicon.ico"),
+        new AntPathRequestMatcher("/swagger-resources/**"),
+        new AntPathRequestMatcher("/swagger-ui/**"),
+        new AntPathRequestMatcher("/v3/api-docs/**"),
+        new AntPathRequestMatcher("/webjars/**"),
+        new AntPathRequestMatcher("/api/test/**")
+    );
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-        String requestURI = httpRequest.getRequestURI();
-        String token = resolveToken(httpRequest);
 
-        if (requestURI.equals("/login") || requestURI.equals("/api/auth/oauth2/google")) {
+        // 제외 경로 확인
+        if (excludePaths.stream().anyMatch(matcher -> matcher.matches(httpRequest))) {
             chain.doFilter(request, response);  // 예외 경로는 필터를 건너뜀
             return;
         }
     
+        String token = resolveToken(httpRequest);
         if (token != null && jwtTokenProvider.validateToken(token)) {
             log.debug("JWT Token found: {}", token);
             String email = jwtTokenProvider.getEmailFromToken(token);

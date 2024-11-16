@@ -27,7 +27,7 @@ public class HistoryServiceImpl implements HistoryService {
     private final HistoryRepository historyRepository;
     private final KeywordRepository keywordRepository;
     private final UserService userService;
-    private final AIService aiService;
+    private final ChatService aiService;
     
     @Override
     @Transactional

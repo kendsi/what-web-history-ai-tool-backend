@@ -24,7 +24,7 @@ import cap.team3.what.config.ObjectMapperConfig;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AIServiceImpl implements AIService {
+public class ChatServiceImpl implements ChatService {
 
     @Value("classpath:prompts/prompt.json")
     private Resource promptResource;

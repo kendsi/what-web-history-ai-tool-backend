@@ -1,6 +1,7 @@
 package cap.team3.what.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import cap.team3.what.exception.UserNotFoundException;
 import cap.team3.what.model.User;
@@ -14,7 +15,7 @@ public class UserServiceImpl implements UserService{
     private final UserRepsitory userRepository;
     
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public User getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new UserNotFoundException("No such user in DB"));
