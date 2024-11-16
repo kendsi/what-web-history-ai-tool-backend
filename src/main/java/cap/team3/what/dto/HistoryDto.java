@@ -10,29 +10,21 @@ import lombok.Data;
 public class HistoryDto {
 
     private Long id;
-
-    private String email;
-    private String title;
     private String content;
-    private String url;
+
+    private VectorMetaData metaData;
     
     private int spentTime;
     private int visitCount;
-    private LocalDateTime visitTime;
-    private List<String> keywords;
 
     public HistoryDto() {}
     
     @Builder
-    public HistoryDto(Long id, String email, String title, String content, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<String> keywords) {
+    public HistoryDto(Long id, String content, VectorMetaData metaData, int spentTime, int visitCount) {
         this.id = id;
-        this.email = email;
-        this.title = title;
         this.content = content;
-        this.url = url;
+        this.metaData = metaData;
         this.spentTime = spentTime;
         this.visitCount = visitCount;
-        this.visitTime = visitTime;
-        this.keywords = keywords;
     }
 }

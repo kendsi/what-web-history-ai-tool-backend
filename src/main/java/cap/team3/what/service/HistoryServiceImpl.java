@@ -10,12 +10,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cap.team3.what.dto.HistoryDto;
+import cap.team3.what.dto.VectorMetaData;
 import cap.team3.what.exception.HistoryNotFoundException;
 import cap.team3.what.model.History;
 import cap.team3.what.model.Keyword;
 import cap.team3.what.model.User;
 import cap.team3.what.repository.HistoryRepository;
 import cap.team3.what.repository.KeywordRepository;
+import cap.team3.what.util.ChatResponseParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,17 +29,19 @@ public class HistoryServiceImpl implements HistoryService {
     private final HistoryRepository historyRepository;
     private final KeywordRepository keywordRepository;
     private final UserService userService;
-    private final ChatService aiService;
+    private final ChatService chatService;
+    private final VectorStoreService vectorStoreService;
     
     @Override
     @Transactional
     public HistoryDto saveHistory(HistoryDto historyDto) {
 
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        VectorMetaData metaData = historyDto.getMetaData();
         User user = userService.getUserByEmail(email);
-        log.info(user.getId().toString());
+        log.info("User ID: " + user.getId().toString());
 
-        History history = historyRepository.findByUserAndUrl(user, historyDto.getUrl()).orElse(null);
+        History history = historyRepository.findByUserAndUrl(user, metaData.getUrl()).orElse(null);
 
         if (history == null) {
             History newHistory = convertToModel(historyDto);
@@ -45,9 +49,11 @@ public class HistoryServiceImpl implements HistoryService {
             newHistory.setUser(user);
             return convertToDto(historyRepository.save(newHistory));
         }
+
+        analyzeHistory(metaData.getUrl());
         
         history.setVisitCount(history.getVisitCount() + 1);
-        history.setVisitTime(historyDto.getVisitTime());
+        history.setVisitTime(metaData.getVisitTime());
 
         return convertToDto(historyRepository.save(history));
     }
@@ -57,6 +63,7 @@ public class HistoryServiceImpl implements HistoryService {
 
         History history = historyRepository.findById(id)
                 .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
+        
         return convertToDto(history);
     }
 
@@ -68,62 +75,6 @@ public class HistoryServiceImpl implements HistoryService {
         History history = historyRepository.findByUserAndUrl(user, url)
             .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         return convertToDto(history);
-    }
-
-    @Override
-    @Transactional
-    public HistoryDto updateHistory(String url, int spentTime) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.getUserByEmail(email);
-        
-        History history = historyRepository.findByUserAndUrl(user, url)
-            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
-
-        history.setSpentTime(history.getSpentTime() + spentTime);
-        return convertToDto(historyRepository.save(history));
-    }
-
-    @Override
-    @Transactional
-    public List<String> extractKeywords(String url) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.getUserByEmail(email);
-        
-        History history = historyRepository.findByUserAndUrl(user, url)
-            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
-
-        if (!history.getKeywords().isEmpty()) {
-            throw new RuntimeException("Keyword already extracted for url: " + history.getUrl());
-        }
-
-        List<String> extractedKeywords = aiService.extractKeywords(history.getContent());
-        List<Keyword> keywords = extractedKeywords.stream()
-            .map(keywordText -> keywordRepository.findByKeyword(keywordText)
-                .orElseGet(() -> keywordRepository.save(new Keyword(keywordText))))
-            .collect(Collectors.toList());
-
-        history.setKeywords(keywords);
-        historyRepository.save(history);
-
-        return extractedKeywords;
-    }
-
-    @Override
-    @Transactional
-    public void deleteHistory(String url) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.getUserByEmail(email);
-        
-        History history = historyRepository.findByUserAndUrl(user, url)
-            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
-        
-        historyRepository.delete(history);
-
-        history.getKeywords().forEach(keyword -> {
-            if (keywordRepository.countByKeywordsContains(keyword) == 0L) { // 다른 History와 연결되지 않은 경우만 삭제
-                keywordRepository.delete(keyword);
-            }
-        });
     }
 
     @Override
@@ -151,28 +102,66 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy, List<String> keywords) {
+    @Transactional
+    public HistoryDto updateHistory(String url, int spentTime) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
-
-        List<History> histories;
-        if ("visitCount".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenAndKeywordsOrderByVisitCount(user, startTime, endTime, keywords, Long.valueOf(keywords.size()));
-        } else if ("spentTime".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenAndKeywordsOrderBySpentTime(user, startTime, endTime, keywords, Long.valueOf(keywords.size()));
-        } else {
-            histories = historyRepository.findByVisitTimeBetweenAndKeywordsOrderByVisitTime(user, startTime, endTime, keywords, Long.valueOf(keywords.size()));
-        }
         
-        if (histories.isEmpty()) {
-            throw new HistoryNotFoundException("No corresponding histories in the given time range");
+        History history = historyRepository.findByUserAndUrl(user, url)
+            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
+
+        history.setSpentTime(history.getSpentTime() + spentTime);
+        return convertToDto(historyRepository.save(history));
+    }
+
+    @Override
+    @Transactional
+    public VectorMetaData analyzeHistory(String url) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
+        
+        History history = historyRepository.findByUserAndUrl(user, url)
+            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
+
+        if (!history.getKeywords().isEmpty()) {
+            throw new RuntimeException("History already analyzed for url: " + history.getUrl());
         }
 
-        return histories.stream()
-                        .map(this::convertToDto)
-                        .collect(Collectors.toList());
+        VectorMetaData analyzedContent = ChatResponseParser.parseChatResponse(chatService.analyzeContent(history.getContent()));
+
+        List<Keyword> keywords = analyzedContent.getKeywords().stream()
+            .map(keywordText -> keywordRepository.findByKeyword(keywordText)
+                .orElseGet(() -> keywordRepository.save(new Keyword(keywordText))))
+            .collect(Collectors.toList());
+
+        history.setKeywords(keywords);
+        historyRepository.save(history);
+        
+        analyzedContent.setId(vectorStoreService.addDocument(analyzedContent));
+
+        return analyzedContent;
     }
+
+    @Override
+    @Transactional
+    public void deleteHistory(String url) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
+        
+        History history = historyRepository.findByUserAndUrl(user, url)
+            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
+        
+        historyRepository.delete(history);
+
+        history.getKeywords().forEach(keyword -> {
+            if (keywordRepository.countByKeywordsContains(keyword) == 0L) { // 다른 History와 연결되지 않은 경우만 삭제
+                keywordRepository.delete(keyword);
+            }
+        });
+
+        vectorStoreService.deleteDocument(history.getVectorId());
+    }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -222,8 +211,9 @@ public class HistoryServiceImpl implements HistoryService {
         }
     
         return History.builder()
-                      .title(historyDto.getTitle())
-                      .content(historyDto.getContent())
+                      .vectorId(historyDto.getMetaData().getId())
+                      .longSummary(historyDto.getMetaData().getLongSummary())
+                      .shortSummary(historyDto.getMetaData().getShortSummary())
                       .url(historyDto.getUrl())
                       .spentTime(historyDto.getSpentTime())
                       .visitCount(historyDto.getVisitCount())
@@ -243,12 +233,19 @@ public class HistoryServiceImpl implements HistoryService {
         } else {
             keywords = new ArrayList<>();
         }
+
+        VectorMetaData metaData = new VectorMetaData();
+
+        metaData.setId(history.getVectorId());
+        metaData.setLongSummary(history.getLongSummary());
+        metaData.setShortSummary(history.getShortSummary());
+        metaData.setKeywords(keywords);
+        metaData.setUrl(history.getUrl());
     
         return HistoryDto.builder()
                          .id(history.getId())
                          .email(history.getUser().getEmail())
-                         .title(history.getTitle())
-                         .content(history.getContent())
+                         .metaData(metaData)
                          .url(history.getUrl())
                          .spentTime(history.getSpentTime())
                          .visitCount(history.getVisitCount())

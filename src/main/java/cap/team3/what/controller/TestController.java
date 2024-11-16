@@ -35,8 +35,8 @@ public class TestController {
     }
     
     @GetMapping("/vector/search")
-    public ResponseEntity<List<VectorMetaData>> getMethodName(@RequestParam String query) {
-        return new ResponseEntity<>(vectorStoreService.searchSimilarDocuments(query, 5), HttpStatus.OK);
+    public ResponseEntity<List<VectorMetaData>> getDocuments(@RequestParam String query) {
+        return new ResponseEntity<>(vectorStoreService.searchSimilarDocuments(query, 5, "test@example.com"), HttpStatus.OK);
     }
     
 }

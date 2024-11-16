@@ -20,11 +20,17 @@ public class History {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private String title;
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
-    @Column(length = 765)
+
+    private String vectorId;
+    @Column(length = 2000)
+    private String longSummary;
+    @Column(length = 1000)
+    private String shortSummary;
+    @Column(length = 1000)
     private String url;
+
     private int spentTime;
     private int visitCount;
     private LocalDateTime visitTime;
@@ -38,11 +44,13 @@ public class History {
     private List<Keyword> keywords;
 
     @Builder
-    public History(User user, String url, String title, String content, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
+    public History(User user, String content, String vectorId, String longSummary, String shortSummary, String url, String title, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
         this.user = user;
-        this.url = url;
-        this.title = title;
         this.content = content;
+        this.vectorId = vectorId;
+        this.longSummary = longSummary;
+        this.shortSummary = shortSummary;
+        this.url = url;
         this.spentTime = spentTime;
         this.visitCount = visitCount;
         this.visitTime = visitTime;

@@ -32,7 +32,7 @@ public class ChatServiceImpl implements ChatService {
     private final OpenAiChatModel openAiChatModel;
     
     @Override
-    public List<String> extractKeywords(String content) {
+    public String analyzeContent(String content) {
         try {
             // JSON 파일을 읽어 List<Message>로 매핑
             ObjectMapper objectMapper = ObjectMapperConfig.createObjectMapper();
@@ -56,7 +56,7 @@ public class ChatServiceImpl implements ChatService {
             if (!response.getResults().isEmpty()) {
                 String result = response.getResults().get(0).getOutput().getContent();
                 log.info(result);
-                return regexKeywords(result);
+                return result;
             } else {
                 throw new RuntimeException("No response from GPT");
             }
@@ -65,13 +65,5 @@ public class ChatServiceImpl implements ChatService {
             log.error("Failed to read the prompt file", e);
             throw new RuntimeException("Failed to read the prompt file", e);
         }
-    }
-
-
-    private List<String> regexKeywords(String input) {
-        String trimmedInput = input.replaceAll("[\\[\\]]", "").trim();
-        List<String> keywords = Arrays.asList(trimmedInput.split("\\s*,\\s*"));
-
-        return keywords;
     }
 }

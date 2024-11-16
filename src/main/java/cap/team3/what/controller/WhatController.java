@@ -1,7 +1,9 @@
 package cap.team3.what.controller;
 
 import cap.team3.what.dto.HistoryDto;
+import cap.team3.what.dto.VectorMetaData;
 import cap.team3.what.service.HistoryService;
+import cap.team3.what.service.VectorStoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +37,7 @@ public class WhatController {
     public ResponseEntity<HistoryDto> getHistoryById(@PathVariable Long id) {
 
         HistoryDto history = historyService.getHistoryById(id);
+
         return new ResponseEntity<>(history, HttpStatus.OK);
     }
     
@@ -59,30 +62,6 @@ public class WhatController {
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 
-    @GetMapping("/api/history/keyword")
-    public ResponseEntity<List<HistoryDto>> getHistoryByTimeAndKeyword(
-                @RequestParam(name = "startTime") LocalDateTime startTime,
-                @RequestParam(name = "endTime") LocalDateTime endTime,
-                @RequestParam(name = "orderBy", defaultValue = "visitTime") String orderBy,
-                @RequestParam(name = "keywords") List<String> keywords) {
-                
-        if (startTime == null) {
-            startTime = LocalDateTime.now().minusDays(7);
-        }
-        if (endTime == null) {
-            endTime = LocalDateTime.now();
-        }
-        if (startTime.isAfter(endTime)) {
-            throw new IllegalArgumentException("start time cannot be after end time");
-        }
-        if (keywords == null) {
-            throw new IllegalArgumentException("No keywords in request");
-        }
-
-        List<HistoryDto> histories = historyService.getHistoriesByTime(startTime, endTime, orderBy, keywords);
-        return new ResponseEntity<>(histories, HttpStatus.OK);
-    }
-
     @PostMapping("/api/history")
     public ResponseEntity<HistoryDto> saveHistory(@RequestBody HistoryDto historyDto) {
 
@@ -103,13 +82,14 @@ public class WhatController {
     }
 
     @PutMapping("/api/history/keyword")
-    public ResponseEntity<List<String>> extractKeywords(@RequestParam(name = "url") String url) {
+    public ResponseEntity<VectorMetaData> analyzedHistory(@RequestParam(name = "url") String url) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
         }
+        VectorMetaData metaData = historyService.analyzeHistory(url);
 
-        return new ResponseEntity<>(historyService.extractKeywords(url), HttpStatus.OK);
+        return new ResponseEntity<>(metaData, HttpStatus.OK);
     }
 
     @DeleteMapping("/api/history")
@@ -120,6 +100,8 @@ public class WhatController {
         }
 
         historyService.deleteHistory(url);
+
+
         return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
     }
     
