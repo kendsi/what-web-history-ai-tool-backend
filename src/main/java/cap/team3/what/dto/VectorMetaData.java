@@ -13,6 +13,8 @@ public class VectorMetaData {
     private String longSummary;
     private String shortSummary;
     private List<String> keywords;
+    private int spentTime;
+    private int visitCount;
     private LocalDateTime visitTime;
 
     public VectorMetaData() {}

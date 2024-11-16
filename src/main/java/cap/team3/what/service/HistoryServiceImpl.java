@@ -30,30 +30,60 @@ public class HistoryServiceImpl implements HistoryService {
     private final KeywordRepository keywordRepository;
     private final UserService userService;
     private final ChatService chatService;
-    private final VectorStoreService vectorStoreService;
+    private final PineconeService pineconeService;
     
     @Override
     @Transactional
     public HistoryDto saveHistory(HistoryDto historyDto) {
 
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         VectorMetaData metaData = historyDto.getMetaData();
+        metaData.setEmail(email);
+
         User user = userService.getUserByEmail(email);
-        log.info("User ID: " + user.getId().toString());
 
         History history = historyRepository.findByUserAndUrl(user, metaData.getUrl()).orElse(null);
 
         if (history == null) {
+            VectorMetaData analyzedContent = ChatResponseParser.parseChatResponse(chatService.analyzeContent(historyDto.getContent()));
+            List<Keyword> keywords = analyzedContent.getKeywords().stream()
+                .map(keywordText -> keywordRepository.findByKeyword(keywordText)
+                    .orElseGet(() -> keywordRepository.save(new Keyword(keywordText))))
+                .collect(Collectors.toList());
+
+            metaData.setLongSummary(analyzedContent.getLongSummary());
+            metaData.setShortSummary(analyzedContent.getShortSummary());
+            metaData.setKeywords(analyzedContent.getKeywords());
+            metaData.setVisitCount(1);
+            metaData.setSpentTime(0);
+            metaData.setVisitTime(LocalDateTime.now());
+            metaData.setId(pineconeService.saveDocument(metaData));
+
+            historyDto.setMetaData(metaData);
+                
             History newHistory = convertToModel(historyDto);
             newHistory.setVisitCount(1);
             newHistory.setUser(user);
+            newHistory.setKeywords(keywords);
+            
             return convertToDto(historyRepository.save(newHistory));
         }
 
-        analyzeHistory(metaData.getUrl());
-        
         history.setVisitCount(history.getVisitCount() + 1);
-        history.setVisitTime(metaData.getVisitTime());
+        history.setVisitTime(LocalDateTime.now());
+        
+        metaData.setSpentTime(history.getSpentTime());
+        metaData.setVisitCount(history.getVisitCount() + 1);
+        metaData.setVisitTime(LocalDateTime.now());
+        metaData.setLongSummary(history.getLongSummary());
+        metaData.setShortSummary(history.getShortSummary());
+        metaData.setKeywords(history.getKeywords().stream()
+                                                .map(Keyword::getKeyword)
+                                                .collect(Collectors.toList()));
+        metaData.setId(history.getVectorId());
+
+        pineconeService.updateDocument(metaData);
 
         return convertToDto(historyRepository.save(history));
     }
@@ -69,7 +99,8 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     public HistoryDto getHistoryByUrl(String url) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -80,7 +111,8 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional(readOnly = true)
     public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         User user = userService.getUserByEmail(email);
 
         List<History> histories;
@@ -104,7 +136,8 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional
     public HistoryDto updateHistory(String url, int spentTime) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -116,41 +149,15 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional
-    public VectorMetaData analyzeHistory(String url) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.getUserByEmail(email);
-        
-        History history = historyRepository.findByUserAndUrl(user, url)
-            .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
-
-        if (!history.getKeywords().isEmpty()) {
-            throw new RuntimeException("History already analyzed for url: " + history.getUrl());
-        }
-
-        VectorMetaData analyzedContent = ChatResponseParser.parseChatResponse(chatService.analyzeContent(history.getContent()));
-
-        List<Keyword> keywords = analyzedContent.getKeywords().stream()
-            .map(keywordText -> keywordRepository.findByKeyword(keywordText)
-                .orElseGet(() -> keywordRepository.save(new Keyword(keywordText))))
-            .collect(Collectors.toList());
-
-        history.setKeywords(keywords);
-        historyRepository.save(history);
-        
-        analyzedContent.setId(vectorStoreService.addDocument(analyzedContent));
-
-        return analyzedContent;
-    }
-
-    @Override
-    @Transactional
     public void deleteHistory(String url) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
             .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
-        
+
+        pineconeService.deleteDocument(history.getVectorId());
         historyRepository.delete(history);
 
         history.getKeywords().forEach(keyword -> {
@@ -158,15 +165,42 @@ public class HistoryServiceImpl implements HistoryService {
                 keywordRepository.delete(keyword);
             }
         });
-
-        vectorStoreService.deleteDocument(history.getVectorId());
     }
+
+    @Override
+    public List<HistoryDto> searchHistory(String query) {
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
+
+        List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email, 10);
+
+        log.info("first match: " + metaDatas.get(0).getUrl());
+
+        return metaDatas.stream()
+                        .map(VectorMetaData::getUrl) // URL 추출
+                        .map(this::getHistoryByUrl) // URL로 History 검색
+                        .toList();
+    }
+
+//     @Override
+//     public List<HistoryDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
+//         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+// String email = "test@example.com";
+
+//         List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, 10, email, startTime, endTime);
+
+//         return metaDatas.stream()
+//                         .map(VectorMetaData::getUrl) // URL 추출
+//                         .map(this::getHistoryByUrl) // URL로 History 검색
+//                         .toList();
+//     }
 
 
     @Override
     @Transactional(readOnly = true)
     public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         User user = userService.getUserByEmail(email);
 
         List<History> histories = historyRepository.findByVisitTimeBetweenAndKeyword(user, startTime, endTime, keyword);
@@ -181,7 +215,8 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional(readOnly = true)
     public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+String email = "test@example.com";
         User user = userService.getUserByEmail(email);
 
         List<History> histories = historyRepository.findByVisitTimeBetweenAndKeyword(user, startTime, endTime, keyword);
@@ -201,9 +236,10 @@ public class HistoryServiceImpl implements HistoryService {
     private History convertToModel(HistoryDto historyDto) {
 
         List<Keyword> keywords;
+        VectorMetaData metaData = historyDto.getMetaData();
 
-        if (historyDto.getKeywords() != null) {
-            keywords = historyDto.getKeywords().stream()
+        if (metaData.getKeywords() != null) {
+            keywords = metaData.getKeywords().stream()
                 .map(keywordText -> Keyword.builder().keyword(keywordText).build())
                 .collect(Collectors.toList());
         } else {
@@ -211,13 +247,14 @@ public class HistoryServiceImpl implements HistoryService {
         }
     
         return History.builder()
-                      .vectorId(historyDto.getMetaData().getId())
-                      .longSummary(historyDto.getMetaData().getLongSummary())
-                      .shortSummary(historyDto.getMetaData().getShortSummary())
-                      .url(historyDto.getUrl())
-                      .spentTime(historyDto.getSpentTime())
-                      .visitCount(historyDto.getVisitCount())
-                      .visitTime(historyDto.getVisitTime())
+                      .content(historyDto.getContent())
+                      .vectorId(metaData.getId())
+                      .longSummary(metaData.getLongSummary())
+                      .shortSummary(metaData.getShortSummary())
+                      .url(metaData.getUrl())
+                      .spentTime(metaData.getSpentTime())
+                      .visitCount(metaData.getVisitCount())
+                      .visitTime(metaData.getVisitTime())
                       .keywords(keywords)
                       .build();
     }
@@ -237,20 +274,19 @@ public class HistoryServiceImpl implements HistoryService {
         VectorMetaData metaData = new VectorMetaData();
 
         metaData.setId(history.getVectorId());
+        metaData.setEmail(history.getUser().getEmail());
         metaData.setLongSummary(history.getLongSummary());
         metaData.setShortSummary(history.getShortSummary());
         metaData.setKeywords(keywords);
         metaData.setUrl(history.getUrl());
+        metaData.setVisitTime(history.getVisitTime());
     
         return HistoryDto.builder()
                          .id(history.getId())
-                         .email(history.getUser().getEmail())
+                         .content("")
                          .metaData(metaData)
-                         .url(history.getUrl())
                          .spentTime(history.getSpentTime())
                          .visitCount(history.getVisitCount())
-                         .visitTime(history.getVisitTime())
-                         .keywords(keywords)
                          .build();
     }
 }

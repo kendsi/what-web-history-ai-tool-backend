@@ -1,8 +1,5 @@
 package cap.team3.what.dto;
 
-import java.util.List;
-import java.time.LocalDateTime;
-
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,11 +8,7 @@ public class HistoryDto {
 
     private Long id;
     private String content;
-
     private VectorMetaData metaData;
-    
-    private int spentTime;
-    private int visitCount;
 
     public HistoryDto() {}
     
@@ -24,7 +17,5 @@ public class HistoryDto {
         this.id = id;
         this.content = content;
         this.metaData = metaData;
-        this.spentTime = spentTime;
-        this.visitCount = visitCount;
     }
 }

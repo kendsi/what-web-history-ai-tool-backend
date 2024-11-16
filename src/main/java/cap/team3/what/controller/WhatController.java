@@ -1,9 +1,7 @@
 package cap.team3.what.controller;
 
 import cap.team3.what.dto.HistoryDto;
-import cap.team3.what.dto.VectorMetaData;
 import cap.team3.what.service.HistoryService;
-import cap.team3.what.service.VectorStoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,17 +79,6 @@ public class WhatController {
         return new ResponseEntity<>(historyService.updateHistory(url, spentTime), HttpStatus.OK);
     }
 
-    @PutMapping("/api/history/keyword")
-    public ResponseEntity<VectorMetaData> analyzedHistory(@RequestParam(name = "url") String url) {
-
-        if (url == null) {
-            throw new IllegalArgumentException("URL is required");
-        }
-        VectorMetaData metaData = historyService.analyzeHistory(url);
-
-        return new ResponseEntity<>(metaData, HttpStatus.OK);
-    }
-
     @DeleteMapping("/api/history")
     public ResponseEntity<String> deleteHistory(@RequestParam(name = "url") String url) {
 
@@ -104,6 +91,26 @@ public class WhatController {
 
         return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
     }
+
+    @GetMapping("/api/history/search")
+    public ResponseEntity<List<HistoryDto>> searchHistory(
+        @RequestParam(name = "startTime") LocalDateTime startTime,
+        @RequestParam(name = "endTime") LocalDateTime endTime,
+        @RequestParam(name = "query") String query) {
+
+        List<HistoryDto> result;
+
+        result = historyService.searchHistory(query);
+        // if (startTime == null || endTime == null) {
+        //     result = historyService.searchHistory(query);
+        // }
+        // else {
+        //     result = historyService.searchHistory(startTime, endTime, query);
+        // }
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+    
     
     @GetMapping("/api/history/statistics/{keyword}/frequency")
     public int getKeywordFrequency(
