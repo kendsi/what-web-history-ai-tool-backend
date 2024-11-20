@@ -54,10 +54,10 @@ public class WhatController {
 
         
         if (startTime == null) {
-            startTime = LocalDateTime.of(-4713, 1, 1, 0, 0);
+            startTime = LocalDateTime.of(-4712, 1, 1, 0, 0);
         }
         if (endTime == null) {
-            endTime = LocalDateTime.of(294276, 12, 31, 23, 59);
+            endTime = LocalDateTime.of(294275, 12, 31, 23, 59);
         }
 
         if (startTime.isAfter(endTime)) {
@@ -69,14 +69,12 @@ public class WhatController {
     }
 
     @PostMapping("/api/history")
-    public ResponseEntity<?> saveHistory(@RequestBody HistoryRequestDto historyRequestDto) {
-
-        historyService.saveHistory(historyRequestDto);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<DetailedHistoryResponseDto> saveHistory(@RequestBody HistoryRequestDto historyRequestDto) {
+        return new ResponseEntity<>(historyService.saveHistory(historyRequestDto), HttpStatus.OK);
     }
     
     @PutMapping("/api/history")
-    public ResponseEntity<?> updateHistory(
+    public ResponseEntity<DetailedHistoryResponseDto> updateHistory(
                 @RequestParam(name = "url") String url, 
                 @RequestParam(name = "spentTime", defaultValue = "0") int spentTime) {
 
@@ -84,9 +82,7 @@ public class WhatController {
             throw new IllegalArgumentException("URL is required");
         }
 
-        historyService.updateHistory(url, spentTime);
-
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(historyService.updateHistory(url, spentTime), HttpStatus.OK);
     }
 
     @DeleteMapping("/api/history")
@@ -112,15 +108,18 @@ public class WhatController {
         
         @RequestParam(name = "query") String query) {
 
-        List<HistoryResponseDto> result;
 
-        if (startTime == null || endTime == null) {
-            log.info("No visitTime criteria");
-            result = historyService.searchHistory(query);
+        if (startTime == null) {
+            startTime = LocalDateTime.of(-4712, 1, 1, 0, 0);
         }
-        else {
-            result = historyService.searchHistory(startTime, endTime, query);
+        if (endTime == null) {
+            endTime = LocalDateTime.of(294275, 12, 31, 23, 59);
         }
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+        
+        List<HistoryResponseDto> result = historyService.searchHistory(startTime, endTime, query);
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -128,15 +127,19 @@ public class WhatController {
     
     @GetMapping("/api/history/statistics/{keyword}/frequency")
     public int getKeywordFrequency(
-                @RequestParam(name = "startTime") LocalDateTime startTime,
-                @RequestParam(name = "endTime") LocalDateTime endTime,
+                @Parameter(description = "Start time for filtering history (optional)", required = false)
+                @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
+                
+                @Parameter(description = "End time for filtering history (optional)", required = false)
+                @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
+
                 @PathVariable(name = "keyword") String keyword) {
 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);
         }
         if (endTime == null) {
-            endTime = LocalDateTime.now();
+            endTime = LocalDateTime.now().isBefore(startTime.plusDays(7)) ? LocalDateTime.now() : startTime.plusDays(7);
         }
         if (startTime.isAfter(endTime)) {
             throw new IllegalArgumentException("start time cannot be after end time");
@@ -147,15 +150,19 @@ public class WhatController {
 
     @GetMapping("/api/history/statistics/{keyword}/spent_time")
     public int getTotalSpentTime(
-                @RequestParam(name = "startTime") LocalDateTime startTime,
-                @RequestParam(name = "endTime") LocalDateTime endTime,
+                @Parameter(description = "Start time for filtering history (optional)", required = false)
+                @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
+                
+                @Parameter(description = "End time for filtering history (optional)", required = false)
+                @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
+
                 @PathVariable(name = "keyword") String keyword) {
 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(7);
         }
         if (endTime == null) {
-            endTime = LocalDateTime.now();
+            endTime = LocalDateTime.now().isBefore(startTime.plusDays(7)) ? LocalDateTime.now() : startTime.plusDays(7);
         }
         if (startTime.isAfter(endTime)) {
             throw new IllegalArgumentException("start time cannot be after end time");

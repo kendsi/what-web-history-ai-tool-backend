@@ -39,8 +39,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Transactional
     public DetailedHistoryResponseDto saveHistory(HistoryRequestDto historyRequestDto) {
 
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         User user = userService.getUserByEmail(email);
 
@@ -113,8 +112,7 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     public HistoryResponseDto getHistoryByUrl(String url) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -125,8 +123,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional(readOnly = true)
     public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
 
         List<History> histories;
@@ -150,8 +147,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional
     public DetailedHistoryResponseDto updateHistory(String url, int spentTime) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -168,8 +164,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional
     public void deleteHistory(String url) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -187,8 +182,7 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     public List<HistoryResponseDto> searchHistory(String query) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email, 10);
 
@@ -202,8 +196,7 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     public List<HistoryResponseDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email,10, startTime, endTime);
 
@@ -217,8 +210,7 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     @Transactional(readOnly = true)
     public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
 
         List<History> histories = historyRepository.findByVisitTimeBetweenAndKeyword(user, startTime, endTime, keyword);
@@ -233,8 +225,7 @@ String email = "test@example.com";
     @Override
     @Transactional(readOnly = true)
     public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword) {
-        // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
 
         List<History> histories = historyRepository.findByVisitTimeBetweenAndKeyword(user, startTime, endTime, keyword);
