@@ -5,14 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import cap.team3.what.service.UserService;
+import cap.team3.what.service.AuthService;
 
 import java.util.Map;
 
@@ -22,26 +21,21 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
 
-    @GetMapping("oauth2/google")
-    public ResponseEntity<?> googleLogin(OAuth2AuthenticationToken authentication) {
-        Map<String, Object> userAttributes = authentication.getPrincipal().getAttributes();
-        String email = (String) userAttributes.get("email");
+    @PostMapping("oauth2/google")
+    public ResponseEntity<String> googleLogin(@RequestBody Map<String, String> request) {
+        String idToken = request.get("token");
+        String jwtToken = authService.login(idToken);
 
-        String token = userService.login(email);
-
-        return ResponseEntity
-                .ok()
-                .header("Authorization", "Bearer " + token)
-                .build();
+        return new ResponseEntity<>(jwtToken, HttpStatus.OK);
     }
 
     @PostMapping("logout")
     public ResponseEntity<String> logout(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");
         
-        userService.logout(token);
+        authService.logout(token);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }

@@ -1,7 +1,6 @@
 package cap.team3.what.service;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +23,7 @@ import cap.team3.what.config.ObjectMapperConfig;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AIServiceImpl implements AIService {
+public class ChatServiceImpl implements ChatService {
 
     @Value("classpath:prompts/prompt.json")
     private Resource promptResource;
@@ -32,7 +31,7 @@ public class AIServiceImpl implements AIService {
     private final OpenAiChatModel openAiChatModel;
     
     @Override
-    public List<String> extractKeywords(String content) {
+    public String analyzeContent(String content) {
         try {
             // JSON 파일을 읽어 List<Message>로 매핑
             ObjectMapper objectMapper = ObjectMapperConfig.createObjectMapper();
@@ -56,7 +55,7 @@ public class AIServiceImpl implements AIService {
             if (!response.getResults().isEmpty()) {
                 String result = response.getResults().get(0).getOutput().getContent();
                 log.info(result);
-                return regexKeywords(result);
+                return result;
             } else {
                 throw new RuntimeException("No response from GPT");
             }
@@ -65,13 +64,5 @@ public class AIServiceImpl implements AIService {
             log.error("Failed to read the prompt file", e);
             throw new RuntimeException("Failed to read the prompt file", e);
         }
-    }
-
-
-    private List<String> regexKeywords(String input) {
-        String trimmedInput = input.replaceAll("[\\[\\]]", "").trim();
-        List<String> keywords = Arrays.asList(trimmedInput.split("\\s*,\\s*"));
-
-        return keywords;
     }
 }

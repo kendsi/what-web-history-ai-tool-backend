@@ -2,7 +2,6 @@ package cap.team3.what.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -68,9 +67,6 @@ public class JwtTokenProvider {
             }
             parseClaims(token);
             return true;
-        } catch (JwtException e) {
-            log.error("Invalid JWT token: ", e.getMessage());
-            return false;
         } catch (Exception e) {
             log.error("Token validation error: ", e);
             return false;
