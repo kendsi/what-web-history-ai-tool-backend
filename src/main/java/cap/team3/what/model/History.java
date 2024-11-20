@@ -22,14 +22,16 @@ public class History {
 
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
-
-    private String vectorId;
-    @Column(length = 2000)
-    private String longSummary;
-    @Column(length = 1000)
-    private String shortSummary;
+    
     @Column(length = 1000)
     private String url;
+
+    private String vectorId;
+    private String title;
+    @Column(length = 3000)
+    private String longSummary;
+    @Column(length = 2000)
+    private String shortSummary;
 
     private int spentTime;
     private int visitCount;
@@ -44,10 +46,11 @@ public class History {
     private List<Keyword> keywords;
 
     @Builder
-    public History(User user, String content, String vectorId, String longSummary, String shortSummary, String url, String title, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
+    public History(User user, String content, String vectorId, String title, String longSummary, String shortSummary, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
         this.user = user;
         this.content = content;
         this.vectorId = vectorId;
+        this.title = title;
         this.longSummary = longSummary;
         this.shortSummary = shortSummary;
         this.url = url;

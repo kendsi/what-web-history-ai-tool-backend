@@ -7,6 +7,7 @@ import lombok.Data;
 public class HistoryDto {
 
     private Long id;
+    private String title;
     private String content;
     private VectorMetaData metaData;
 

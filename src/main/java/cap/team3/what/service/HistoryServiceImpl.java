@@ -9,7 +9,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import cap.team3.what.dto.HistoryDto;
+import cap.team3.what.dto.DetailedHistoryResponseDto;
+import cap.team3.what.dto.HistoryRequestDto;
+import cap.team3.what.dto.HistoryResponseDto;
+import cap.team3.what.dto.ParsedChatResponse;
 import cap.team3.what.dto.VectorMetaData;
 import cap.team3.what.exception.HistoryNotFoundException;
 import cap.team3.what.model.History;
@@ -34,84 +37,96 @@ public class HistoryServiceImpl implements HistoryService {
     
     @Override
     @Transactional
-    public HistoryDto saveHistory(HistoryDto historyDto) {
+    public DetailedHistoryResponseDto saveHistory(HistoryRequestDto historyRequestDto) {
 
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
-        VectorMetaData metaData = historyDto.getMetaData();
-        metaData.setEmail(email);
+        String email = "test@example.com";
 
         User user = userService.getUserByEmail(email);
 
-        History history = historyRepository.findByUserAndUrl(user, metaData.getUrl()).orElse(null);
+        History history = historyRepository.findByUserAndUrl(user, historyRequestDto.getUrl()).orElse(null);
+        VectorMetaData metaData;
 
-        if (history == null) {
-            VectorMetaData analyzedContent = ChatResponseParser.parseChatResponse(chatService.analyzeContent(historyDto.getContent()));
-            List<Keyword> keywords = analyzedContent.getKeywords().stream()
-                .map(keywordText -> keywordRepository.findByKeyword(keywordText)
-                    .orElseGet(() -> keywordRepository.save(new Keyword(keywordText))))
-                .collect(Collectors.toList());
-
-            metaData.setLongSummary(analyzedContent.getLongSummary());
-            metaData.setShortSummary(analyzedContent.getShortSummary());
-            metaData.setKeywords(analyzedContent.getKeywords());
-            metaData.setVisitCount(1);
-            metaData.setVisitTime(LocalDateTime.now());
-            metaData.setId(pineconeService.saveDocument(metaData));
-
-            historyDto.setMetaData(metaData);
-                
-            History newHistory = convertToModel(historyDto);
-            newHistory.setVisitCount(1);
-            newHistory.setUser(user);
-            newHistory.setKeywords(keywords);
+        if (history != null) {
+            history.setVisitCount(history.getVisitCount() + 1);
+            history.setVisitTime(LocalDateTime.now());
+    
+            metaData = convertModelToMetaData(history);
             
-            return convertToDto(historyRepository.save(newHistory));
+            pineconeService.updateDocument(metaData);
+    
+            return convertModelToDetailedHistoryDto(historyRepository.save(history));
         }
 
-        history.setVisitCount(history.getVisitCount() + 1);
-        history.setVisitTime(LocalDateTime.now());
+        List<History> histories = historyRepository.findByUrl(historyRequestDto.getUrl()); 
+            
+        if (histories.isEmpty()) {
+            ParsedChatResponse parsedChatResponse = ChatResponseParser.parseChatResponse(chatService.analyzeContent(historyRequestDto.getContent()));
+
+            metaData = VectorMetaData.builder()
+                                        .email(email)
+                                        .url(historyRequestDto.getUrl())
+                                        .title(parsedChatResponse.getTitle())
+                                        .visitTime(LocalDateTime.now())
+                                        .shortSummary(parsedChatResponse.getShortSummary())
+                                        .longSummary(parsedChatResponse.getLongSummary())
+                                        .keywords(parsedChatResponse.getKeywords())
+                                        .spentTime(0)
+                                        .visitCount(1)
+                                        .build();
+
+            pineconeService.saveDocument(metaData);
+        } else {
+            log.info("Reuse Ohter User's Data");
+            history = histories.get(0);
+
+            metaData = convertModelToMetaData(history);
+            metaData.setEmail(email);
+            metaData.setVisitTime(LocalDateTime.now());
+            metaData.setSpentTime(0);
+            metaData.setVisitCount(1);
+
+            List<Float> embeddingVector = pineconeService.getVector(metaData.getId());
+            if (embeddingVector.isEmpty() || embeddingVector == null) {
+                pineconeService.saveDocument(metaData);
+            } else {
+                pineconeService.saveDocument(metaData, embeddingVector);
+
+            }
+        }
         
-        metaData.setSpentTime(history.getSpentTime());
-        metaData.setVisitCount(history.getVisitCount() + 1);
-        metaData.setVisitTime(LocalDateTime.now());
-        metaData.setLongSummary(history.getLongSummary());
-        metaData.setShortSummary(history.getShortSummary());
-        metaData.setKeywords(history.getKeywords().stream()
-                                                .map(Keyword::getKeyword)
-                                                .collect(Collectors.toList()));
-        metaData.setId(history.getVectorId());
-
-        pineconeService.updateDocument(metaData);
-
-        return convertToDto(historyRepository.save(history));
+        History newHistory = convertMetaDataToModel(metaData);
+        newHistory.setUser(user);
+        newHistory.setContent(historyRequestDto.getContent());
+        return convertModelToDetailedHistoryDto(historyRepository.save(newHistory));
+        
     }
 
     @Override
-    public HistoryDto getHistoryById(Long id) {
+    public DetailedHistoryResponseDto getDetailedHistoryById(Long id) {
 
         History history = historyRepository.findById(id)
                 .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
         
-        return convertToDto(history);
+        return convertModelToDetailedHistoryDto(history);
     }
 
     @Override
-    public HistoryDto getHistoryByUrl(String url) {
+    public HistoryResponseDto getHistoryByUrl(String url) {
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = "test@example.com";
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
             .orElseThrow(() -> new HistoryNotFoundException("No such history in DB"));
-        return convertToDto(history);
+        return convertModelToHistoryDto(history);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HistoryDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
+    public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = "test@example.com";
         User user = userService.getUserByEmail(email);
 
         List<History> histories;
@@ -128,15 +143,15 @@ String email = "test@example.com";
         }
 
         return histories.stream()
-                    .map(this::convertToDto)
+                    .map(this::convertModelToHistoryDto)
                     .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public HistoryDto updateHistory(String url, int spentTime) {
+    public DetailedHistoryResponseDto updateHistory(String url, int spentTime) {
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = "test@example.com";
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -144,29 +159,17 @@ String email = "test@example.com";
 
         history.setSpentTime(history.getSpentTime() + spentTime);
 
-        VectorMetaData metaData = new VectorMetaData();
-        metaData.setId(history.getVectorId());
-        metaData.setEmail(email);
-        metaData.setKeywords(history.getKeywords().stream()
-                                                .map(Keyword::getKeyword)
-                                                .collect(Collectors.toList()));
-        metaData.setLongSummary(history.getContent());
-        metaData.setShortSummary(history.getShortSummary());
-        metaData.setSpentTime(history.getSpentTime());
-        metaData.setUrl(history.getUrl());
-        metaData.setVisitCount(history.getVisitCount());
-        metaData.setVisitTime(history.getVisitTime());
-
+        VectorMetaData metaData = convertModelToMetaData(history);
         pineconeService.updateDocument(metaData);
 
-        return convertToDto(historyRepository.save(history));
+        return convertModelToDetailedHistoryDto(historyRepository.save(history));
     }
 
     @Override
     @Transactional
     public void deleteHistory(String url) {
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = "test@example.com";
         User user = userService.getUserByEmail(email);
         
         History history = historyRepository.findByUserAndUrl(user, url)
@@ -183,9 +186,9 @@ String email = "test@example.com";
     }
 
     @Override
-    public List<HistoryDto> searchHistory(String query) {
+    public List<HistoryResponseDto> searchHistory(String query) {
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = "test@example.com";
 
         List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email, 10);
 
@@ -198,9 +201,9 @@ String email = "test@example.com";
     }
 
     @Override
-    public List<HistoryDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
+    public List<HistoryResponseDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
         // String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-String email = "test@example.com";
+        String email = "test@example.com";
 
         List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email,10, startTime, endTime);
 
@@ -248,10 +251,17 @@ String email = "test@example.com";
         return totalSpentTime;
     }
 
-    private History convertToModel(HistoryDto historyDto) {
+
+
+
+
+
+
+    // ----------------------------------private methods------------------------------
+
+    private History convertMetaDataToModel(VectorMetaData metaData) {
 
         List<Keyword> keywords;
-        VectorMetaData metaData = historyDto.getMetaData();
 
         if (metaData.getKeywords() != null) {
             keywords = metaData.getKeywords().stream()
@@ -262,19 +272,19 @@ String email = "test@example.com";
         }
     
         return History.builder()
-                      .content(historyDto.getContent())
-                      .vectorId(metaData.getId())
-                      .longSummary(metaData.getLongSummary())
-                      .shortSummary(metaData.getShortSummary())
-                      .url(metaData.getUrl())
-                      .spentTime(metaData.getSpentTime())
-                      .visitCount(metaData.getVisitCount())
-                      .visitTime(metaData.getVisitTime())
-                      .keywords(keywords)
-                      .build();
+                        .url(metaData.getUrl())
+                        .vectorId(metaData.getId())
+                        .title(metaData.getTitle())
+                        .longSummary(metaData.getLongSummary())
+                        .shortSummary(metaData.getShortSummary())
+                        .spentTime(metaData.getSpentTime())
+                        .visitCount(metaData.getVisitCount())
+                        .visitTime(metaData.getVisitTime())
+                        .keywords(keywords)
+                        .build();
     }
-    
-    private HistoryDto convertToDto(History history) {
+
+    private VectorMetaData convertModelToMetaData(History history) {
 
         List<String> keywords;
 
@@ -285,23 +295,53 @@ String email = "test@example.com";
         } else {
             keywords = new ArrayList<>();
         }
-
-        VectorMetaData metaData = new VectorMetaData();
-
-        metaData.setId(history.getVectorId());
-        metaData.setEmail(history.getUser().getEmail());
-        metaData.setLongSummary(history.getLongSummary());
-        metaData.setShortSummary(history.getShortSummary());
-        metaData.setKeywords(keywords);
-        metaData.setUrl(history.getUrl());
-        metaData.setVisitTime(history.getVisitTime());
-        metaData.setSpentTime(history.getSpentTime());
-        metaData.setVisitCount(history.getVisitCount());
     
-        return HistoryDto.builder()
-                         .id(history.getId())
-                         .content("")
-                         .metaData(metaData)
-                         .build();
+        return VectorMetaData.builder()
+                                .id(history.getVectorId())
+                                .email(history.getUser().getEmail())
+                                .url(history.getUrl())
+                                .title(history.getTitle())
+                                .visitTime(history.getVisitTime())
+                                .shortSummary(history.getShortSummary())
+                                .longSummary(history.getLongSummary())
+                                .keywords(keywords)
+                                .spentTime(history.getSpentTime())
+                                .visitCount(history.getVisitCount())
+                                .build();
+    }
+
+    private HistoryResponseDto convertModelToHistoryDto(History history) {
+        return HistoryResponseDto.builder()
+                                    .id(history.getId())
+                                    .url(history.getUrl())
+                                    .title(history.getTitle())
+                                    .visitTime(history.getVisitTime())
+                                    .shortSummary(history.getShortSummary())
+                                    .build();
+    }
+    
+    private DetailedHistoryResponseDto convertModelToDetailedHistoryDto(History history) {
+
+        List<String> keywords;
+
+        if (history.getKeywords() != null) {
+            keywords = history.getKeywords().stream()
+                .map(Keyword::getKeyword)
+                .collect(Collectors.toList());
+        } else {
+            keywords = new ArrayList<>();
+        }
+    
+        return DetailedHistoryResponseDto.builder()
+                                            .id(history.getId())
+                                            .url(history.getUrl())
+                                            .title(history.getTitle())
+                                            .visitTime(history.getVisitTime())
+                                            .shortSummary(history.getShortSummary())
+                                            .longSummary(history.getLongSummary())
+                                            .keywords(keywords)
+                                            .spentTime(history.getSpentTime())
+                                            .visitCount(history.getVisitCount())
+                                            .build();
     }
 }

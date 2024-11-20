@@ -5,13 +5,17 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import cap.team3.what.dto.VectorMetaData;
+import cap.team3.what.dto.ParsedChatResponse;
 
 public class ChatResponseParser {
-    public static VectorMetaData parseChatResponse(String response) {
+    public static ParsedChatResponse parseChatResponse(String response) {
+        String titlePattern = "title: (.+?)(?=\\nlongSummary:)";
         String longSummaryPattern = "longSummary: (.+?)(?=\\nshortSummary:)";
         String shortSummaryPattern = "shortSummary: (.+?)(?=\\nkeywords:)";
         String keywordsPattern = "keywords: \\[(.+)]";
+
+        // Extract title
+        String title = extractUsingRegex(response, titlePattern);
 
         // Extract longSummary
         String longSummary = extractUsingRegex(response, longSummaryPattern);
@@ -29,12 +33,9 @@ public class ChatResponseParser {
             }
         }
 
-        VectorMetaData metaData = new VectorMetaData();
-        metaData.setLongSummary(longSummary);
-        metaData.setShortSummary(shortSummary);
-        metaData.setKeywords(keywords);
+        ParsedChatResponse parsedChatResponse = new ParsedChatResponse(title, shortSummary, longSummary, keywords);
 
-        return metaData;
+        return parsedChatResponse;
     }
 
     private static String extractUsingRegex(String input, String pattern) {
