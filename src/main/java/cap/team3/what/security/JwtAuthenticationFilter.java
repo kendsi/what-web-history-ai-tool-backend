@@ -31,9 +31,8 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
     private final JwtTokenProvider jwtTokenProvider;
 
     private final List<AntPathRequestMatcher> excludePaths = Arrays.asList(
-        new AntPathRequestMatcher("/login"),
-        new AntPathRequestMatcher("/api/auth/oauth2/google"),
-        new AntPathRequestMatcher("/favicon.ico"),
+        new AntPathRequestMatcher("/api/auth/oauth2/google", "POST"),
+        new AntPathRequestMatcher("/favicon.ico", "GET"),
         new AntPathRequestMatcher("/swagger-resources/**"),
         new AntPathRequestMatcher("/swagger-ui/**"),
         new AntPathRequestMatcher("/v3/api-docs/**"),

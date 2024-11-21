@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Bean
     protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> corsConfigurationSource())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // JWT 인증이므로 세션 사용 안 함
             .authorizeHttpRequests(auth -> auth
@@ -37,7 +37,6 @@ public class SecurityConfig {
                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                 .anyRequest().authenticated()  // 그 외 모든 요청은 인증 필요
             )
-            .formLogin(Customizer.withDefaults())  // 기본 로그인 페이지 비활성화
             .addFilterBefore(jwtAuthenticationFilter, BasicAuthenticationFilter.class); // JWT 필터 추가
 
         return http.build();
@@ -46,7 +45,7 @@ public class SecurityConfig {
     @Bean
     protected CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:${port}", "https://capstonepractice.site"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*", "https://capstonepractice.site", "chrome-extension://dhlhdlpaeelmccnpkgfkjpgmlppkenjh"));
         configuration.addAllowedHeader("*");
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "DELETE"));
         configuration.setAllowCredentials(true);

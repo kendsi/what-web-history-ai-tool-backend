@@ -135,9 +135,9 @@ public class HistoryServiceImpl implements HistoryService {
             histories = historyRepository.findByVisitTimeBetweenOrderByVisitTime(user, startTime, endTime);
         }
         
-        if (histories.isEmpty()) {
-            throw new HistoryNotFoundException("No corresponding histories in the given time range");
-        }
+        // if (histories.isEmpty()) {
+        //     throw new HistoryNotFoundException("No corresponding histories in the given time range");
+        // }
 
         return histories.stream()
                     .map(this::convertModelToHistoryDto)
