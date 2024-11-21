@@ -58,6 +58,13 @@ public class HistoryServiceImpl implements HistoryService {
         }
 
         List<History> histories = historyRepository.findByUrl(historyRequestDto.getUrl()); 
+
+        History newHistory = History.builder()
+                .url(historyRequestDto.getUrl())
+                .content(historyRequestDto.getContent())
+                .user(user)
+                .build();
+        historyRepository.save(newHistory);
             
         if (histories.isEmpty()) {
             ParsedChatResponse parsedChatResponse = ChatResponseParser.parseChatResponse(chatService.analyzeContent(historyRequestDto.getContent()));
@@ -94,9 +101,7 @@ public class HistoryServiceImpl implements HistoryService {
             }
         }
         
-        History newHistory = convertMetaDataToModel(metaData);
-        newHistory.setUser(user);
-        newHistory.setContent(historyRequestDto.getContent());
+        convertMetaDataToModel(metaData, newHistory);
         return convertModelToDetailedHistoryDto(historyRepository.save(newHistory));
         
     }
@@ -250,7 +255,7 @@ public class HistoryServiceImpl implements HistoryService {
 
     // ----------------------------------private methods------------------------------
 
-    private History convertMetaDataToModel(VectorMetaData metaData) {
+    private void convertMetaDataToModel(VectorMetaData metaData, History history) {
 
         List<Keyword> keywords;
 
@@ -261,18 +266,15 @@ public class HistoryServiceImpl implements HistoryService {
         } else {
             keywords = new ArrayList<>();
         }
-    
-        return History.builder()
-                        .url(metaData.getUrl())
-                        .vectorId(metaData.getId())
-                        .title(metaData.getTitle())
-                        .longSummary(metaData.getLongSummary())
-                        .shortSummary(metaData.getShortSummary())
-                        .spentTime(metaData.getSpentTime())
-                        .visitCount(metaData.getVisitCount())
-                        .visitTime(metaData.getVisitTime())
-                        .keywords(keywords)
-                        .build();
+
+        history.setVectorId(metaData.getId());
+        history.setTitle(metaData.getTitle());
+        history.setLongSummary(metaData.getLongSummary());
+        history.setShortSummary(metaData.getShortSummary());
+        history.setKeywords(keywords);
+        history.setSpentTime(metaData.getSpentTime());
+        history.setVisitCount(metaData.getVisitCount());
+        history.setVisitTime(metaData.getVisitTime());
     }
 
     private VectorMetaData convertModelToMetaData(History history) {
@@ -302,10 +304,22 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     private HistoryResponseDto convertModelToHistoryDto(History history) {
+
+        List<String> keywords;
+
+        if (history.getKeywords() != null) {
+            keywords = history.getKeywords().stream()
+                .map(Keyword::getKeyword)
+                .collect(Collectors.toList());
+        } else {
+            keywords = new ArrayList<>();
+        }
+
         return HistoryResponseDto.builder()
                                     .id(history.getId())
                                     .url(history.getUrl())
                                     .title(history.getTitle())
+                                    .keywords(keywords)
                                     .visitTime(history.getVisitTime())
                                     .shortSummary(history.getShortSummary())
                                     .build();
