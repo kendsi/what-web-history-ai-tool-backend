@@ -33,33 +33,52 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createToken(String email) {
+    // Access Token 생성
+    public String createAccessToken(String email) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + expirationTime);
 
         return Jwts.builder()
-           .subject(email)
-           .issuedAt(now)
-           .expiration(validity)
-           .signWith(this.getSigningKey())
-           .compact();
+            .subject(email)
+            .issuedAt(now)
+            .expiration(validity)
+            .signWith(this.getSigningKey())
+            .compact();
     }
 
-    public void blacklistToken(String token) {
-        long expiration = parseClaims(token).getExpiration().getTime();
-        long remainingTime = expiration - System.currentTimeMillis();
-        redisTemplate.opsForValue().set(token, "blacklisted", remainingTime, TimeUnit.MILLISECONDS);
+    // Refresh Token 생성
+    public String createRefreshToken(String email) {
+        Date now = new Date();
+
+        return Jwts.builder()
+            .subject(email)
+            .issuedAt(now)
+            .signWith(this.getSigningKey())
+            .compact();
+    }
+
+    public void saveRefreshToken(String email, String refreshToken) {
+        redisTemplate.opsForValue().set("refresh:" + email, refreshToken);
+    }
+
+    public boolean validateRefreshToken(String email, String refreshToken) {
+        String storedToken = (String) redisTemplate.opsForValue().get("refresh:" + email);
+        return storedToken != null && storedToken.equals(refreshToken);
     }
     
-    public Claims parseClaims (String token) {
-        return Jwts.parser()
-                .verifyWith(this.getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    public void invalidateRefreshToken(String email) {
+        redisTemplate.delete("refresh:" + email);
     }
 
-    public boolean validateToken(String token) {
+    public void blacklistAccessToken(String token) {
+        long expiration = parseClaims(token).getExpiration().getTime();
+        long remainingTime = expiration - System.currentTimeMillis();
+        if (remainingTime > 0) {
+            redisTemplate.opsForValue().set(token, "blacklisted", remainingTime, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    public boolean validateAccessToken(String token) {
         try {
             if (redisTemplate.hasKey(token)) {
                 log.error("Blacklisted JWT token");
@@ -68,13 +87,21 @@ public class JwtTokenProvider {
             parseClaims(token);
             return true;
         } catch (Exception e) {
-            log.error("Token validation error: ", e);
+            log.error("Token validation error: " + token + "\n", e);
             return false;
         }
     }
 
-    public String getEmailFromToken(String token) {
+    public String getEmailFromAccessToken(String token) {
         Claims claims = parseClaims(token);
-        return claims.get("sub", String.class);
+        return claims.getSubject();
+    }
+    
+    public Claims parseClaims (String token) {
+        return Jwts.parser()
+                .verifyWith(this.getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

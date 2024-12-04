@@ -33,6 +33,8 @@ public class History {
     @Column(length = 2000)
     private String shortSummary;
 
+    private String category;
+
     private int spentTime;
     private int visitCount;
     private LocalDateTime visitTime;
@@ -46,13 +48,14 @@ public class History {
     private List<Keyword> keywords;
 
     @Builder
-    public History(User user, String content, String vectorId, String title, String longSummary, String shortSummary, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
+    public History(User user, String content, String vectorId, String title, String longSummary, String shortSummary, String category, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
         this.user = user;
         this.content = content;
         this.vectorId = vectorId;
         this.title = title;
         this.longSummary = longSummary;
         this.shortSummary = shortSummary;
+        this.category = category;
         this.url = url;
         this.spentTime = spentTime;
         this.visitCount = visitCount;

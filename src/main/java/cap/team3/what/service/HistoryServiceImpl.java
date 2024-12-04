@@ -1,5 +1,6 @@
 package cap.team3.what.service;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import cap.team3.what.dto.DetailedHistoryResponseDto;
 import cap.team3.what.dto.HistoryRequestDto;
 import cap.team3.what.dto.HistoryResponseDto;
 import cap.team3.what.dto.ParsedChatResponse;
+import cap.team3.what.dto.SearchRequestDto;
 import cap.team3.what.dto.VectorMetaData;
 import cap.team3.what.exception.HistoryNotFoundException;
 import cap.team3.what.model.History;
@@ -76,6 +78,8 @@ public class HistoryServiceImpl implements HistoryService {
                                         .visitTime(LocalDateTime.now())
                                         .shortSummary(parsedChatResponse.getShortSummary())
                                         .longSummary(parsedChatResponse.getLongSummary())
+                                        .domain(extractDomain(historyRequestDto.getUrl()))
+                                        .category("기타")                               //임시
                                         .keywords(parsedChatResponse.getKeywords())
                                         .spentTime(0)
                                         .visitCount(1)
@@ -160,8 +164,8 @@ public class HistoryServiceImpl implements HistoryService {
 
         history.setSpentTime(history.getSpentTime() + spentTime);
 
-        VectorMetaData metaData = convertModelToMetaData(history);
-        pineconeService.updateDocument(metaData);
+        // VectorMetaData metaData = convertModelToMetaData(history);
+        // pineconeService.updateDocument(metaData);
 
         return convertModelToDetailedHistoryDto(historyRepository.save(history));
     }
@@ -200,10 +204,10 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public List<HistoryResponseDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
+    public List<HistoryResponseDto> searchHistory(SearchRequestDto searchRequestDto) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email,10, startTime, endTime);
+        List<VectorMetaData> metaDatas = pineconeService.searchDocuments(searchRequestDto, email,10);
 
         return metaDatas.stream()
                         .map(VectorMetaData::getUrl) // URL 추출
@@ -271,6 +275,7 @@ public class HistoryServiceImpl implements HistoryService {
         history.setTitle(metaData.getTitle());
         history.setLongSummary(metaData.getLongSummary());
         history.setShortSummary(metaData.getShortSummary());
+        history.setCategory(metaData.getCategory());
         history.setKeywords(keywords);
         history.setSpentTime(metaData.getSpentTime());
         history.setVisitCount(metaData.getVisitCount());
@@ -297,6 +302,7 @@ public class HistoryServiceImpl implements HistoryService {
                                 .visitTime(history.getVisitTime())
                                 .shortSummary(history.getShortSummary())
                                 .longSummary(history.getLongSummary())
+                                .category(history.getCategory())
                                 .keywords(keywords)
                                 .spentTime(history.getSpentTime())
                                 .visitCount(history.getVisitCount())
@@ -322,6 +328,7 @@ public class HistoryServiceImpl implements HistoryService {
                                     .keywords(keywords)
                                     .visitTime(history.getVisitTime())
                                     .shortSummary(history.getShortSummary())
+                                    .category(history.getCategory())
                                     .build();
     }
     
@@ -344,9 +351,20 @@ public class HistoryServiceImpl implements HistoryService {
                                             .visitTime(history.getVisitTime())
                                             .shortSummary(history.getShortSummary())
                                             .longSummary(history.getLongSummary())
+                                            .category(history.getCategory())
                                             .keywords(keywords)
                                             .spentTime(history.getSpentTime())
                                             .visitCount(history.getVisitCount())
                                             .build();
     }
+
+    private String extractDomain(String urlString) {
+        try {
+            String host = URI.create(urlString).getHost();
+            return host;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid URL: " + urlString, e);
+        }
+    }
+
 }

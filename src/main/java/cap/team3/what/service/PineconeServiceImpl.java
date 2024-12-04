@@ -13,6 +13,7 @@ import com.google.protobuf.ListValue;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 
+import cap.team3.what.dto.SearchRequestDto;
 import cap.team3.what.dto.VectorMetaData;
 import io.pinecone.clients.Index;
 import io.pinecone.clients.Pinecone;
@@ -36,18 +37,20 @@ public class PineconeServiceImpl implements PineconeService {
 
     @Override
     public void saveDocument(VectorMetaData metaData) {
-        List<Float> embeddingVector = embeddingService.embeddingVector(metaData.getLongSummary());
+        List<Float> embeddingVector = embeddingService.embeddingVector(metaData.getLongSummary() + metaData.getKeywords().toString());
 
-        Map<String, Value> metaDataMap = Map.of(
-            "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
-            "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
-            "title", Value.newBuilder().setStringValue(metaData.getTitle()).build(),
-            "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
-            "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
-            "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
-            "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
-            "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
-            "visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build()
+        Map<String, Value> metaDataMap = Map.ofEntries(
+            Map.entry("email", Value.newBuilder().setStringValue(metaData.getEmail()).build()),
+            Map.entry("url", Value.newBuilder().setStringValue(metaData.getUrl()).build()),
+            Map.entry("title", Value.newBuilder().setStringValue(metaData.getTitle()).build()),
+            Map.entry("shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build()),
+            Map.entry("longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build()),
+            Map.entry("domain", Value.newBuilder().setStringValue(metaData.getDomain()).build()),
+            Map.entry("category", Value.newBuilder().setStringValue(metaData.getCategory()).build()),
+            Map.entry("keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build()),
+            Map.entry("spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build()),
+            Map.entry("visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build()),
+            Map.entry("visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build())
         );
 
         Struct metaDatas = Struct.newBuilder()
@@ -63,16 +66,18 @@ public class PineconeServiceImpl implements PineconeService {
 
     @Override
     public void saveDocument(VectorMetaData metaData, List<Float> embeddingVector) {
-        Map<String, Value> metaDataMap = Map.of(
-            "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
-            "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
-            "title", Value.newBuilder().setStringValue(metaData.getTitle()).build(),
-            "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
-            "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
-            "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
-            "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
-            "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
-            "visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build()
+        Map<String, Value> metaDataMap = Map.ofEntries(
+            Map.entry("email", Value.newBuilder().setStringValue(metaData.getEmail()).build()),
+            Map.entry("url", Value.newBuilder().setStringValue(metaData.getUrl()).build()),
+            Map.entry("title", Value.newBuilder().setStringValue(metaData.getTitle()).build()),
+            Map.entry("shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build()),
+            Map.entry("longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build()),
+            Map.entry("domain", Value.newBuilder().setStringValue(metaData.getDomain()).build()),
+            Map.entry("category", Value.newBuilder().setStringValue(metaData.getCategory()).build()),
+            Map.entry("keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build()),
+            Map.entry("spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build()),
+            Map.entry("visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build()),
+            Map.entry("visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build())
         );
 
         Struct metaDatas = Struct.newBuilder()
@@ -94,17 +99,33 @@ public class PineconeServiceImpl implements PineconeService {
     @Override
     public void updateDocument(VectorMetaData metaData) {
 
-        Map<String, Value> metaDataMap = Map.of(
-            "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
-            "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
-            "title", Value.newBuilder().setStringValue(metaData.getTitle()).build(),
-            "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
-            "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
-            "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
-            "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
-            "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
-            "visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build()
+        Map<String, Value> metaDataMap = Map.ofEntries(
+            Map.entry("email", Value.newBuilder().setStringValue(metaData.getEmail()).build()),
+            Map.entry("url", Value.newBuilder().setStringValue(metaData.getUrl()).build()),
+            Map.entry("title", Value.newBuilder().setStringValue(metaData.getTitle()).build()),
+            Map.entry("shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build()),
+            Map.entry("longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build()),
+            Map.entry("domain", Value.newBuilder().setStringValue(metaData.getDomain()).build()),
+            Map.entry("category", Value.newBuilder().setStringValue(metaData.getCategory()).build()),
+            Map.entry("keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build()),
+            Map.entry("spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build()),
+            Map.entry("visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build()),
+            Map.entry("visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build())
         );
+
+        // Map<String, Value> metaDataMap = Map.of(
+        //     "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
+        //     "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
+        //     "title", Value.newBuilder().setStringValue(metaData.getTitle()).build(),
+        //     "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
+        //     "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
+        //     "domain", Value.newBuilder().setStringValue(metaData.getDomain()).build(),
+        //     "category", Value.newBuilder().setStringValue(metaData.getCategory()).build(),
+        //     "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
+        //     "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
+        //     "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
+        //     "visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build()
+        // );
 
         Struct metaDatas = Struct.newBuilder()
                                 .putAllFields(metaDataMap)
@@ -151,33 +172,64 @@ public class PineconeServiceImpl implements PineconeService {
     }
 
     @Override
-    public List<VectorMetaData> searchDocuments(String query, String email, int topK, LocalDateTime startTime, LocalDateTime endTime) {
-        List<Float> embeddingVector = embeddingService.embeddingVector(query);
+        public List<VectorMetaData> searchDocuments(SearchRequestDto searchRequestDto, String email, int topK) {
 
-        // visitTime 범위 조건 생성
-        Struct visitTimeCondition = Struct.newBuilder()
-            .putFields("$gte", Value.newBuilder()
-                .setNumberValue((double) startTime.toEpochSecond(ZoneOffset.UTC))
-                .build())
-            .putFields("$lte", Value.newBuilder()
-                .setNumberValue((double) endTime.toEpochSecond(ZoneOffset.UTC))
-                .build())
-            .build();
-
-        // 전체 필터 생성
-        Struct filter = Struct.newBuilder()
-            .putFields("email", Value.newBuilder()
+        List<Float> embeddingVector = embeddingService.embeddingVector(searchRequestDto.getQuery());
+    
+        // 필터 빌더 생성
+        Struct.Builder filterBuilder = Struct.newBuilder();
+    
+        // email 조건 추가
+        filterBuilder.putFields("email", Value.newBuilder()
+            .setStructValue(
+                Struct.newBuilder()
+                    .putFields("$eq", Value.newBuilder()
+                        .setStringValue(email)
+                        .build()
+                    ).build()
+            ).build());
+    
+        // visitTime 조건 추가
+        if (searchRequestDto.getStartTime() != null && searchRequestDto.getEndTime() != null) {
+            filterBuilder.putFields("visitTime", Value.newBuilder()
+                .setStructValue(
+                    Struct.newBuilder()
+                        .putFields("$gte", Value.newBuilder()
+                            .setNumberValue((double) searchRequestDto.getStartTime().toEpochSecond(ZoneOffset.UTC))
+                            .build())
+                        .putFields("$lte", Value.newBuilder()
+                            .setNumberValue((double) searchRequestDto.getEndTime().toEpochSecond(ZoneOffset.UTC))
+                            .build())
+                        .build()
+                ).build());
+        }
+    
+        // domain 조건 추가
+        if (searchRequestDto.getDomain() != null && !searchRequestDto.getDomain().isEmpty()) {
+            filterBuilder.putFields("domain", Value.newBuilder()
                 .setStructValue(
                     Struct.newBuilder()
                         .putFields("$eq", Value.newBuilder()
-                            .setStringValue(email)
-                            .build()
-                        ).build()
-                ).build())
-            .putFields("visitTime", Value.newBuilder()
-                .setStructValue(visitTimeCondition)
-                .build())
-            .build();
+                            .setStringValue(searchRequestDto.getDomain())
+                            .build())
+                        .build()
+                ).build());
+        }
+    
+        // category 조건 추가
+        if (searchRequestDto.getCategory() != null && !searchRequestDto.getCategory().isEmpty()) {
+            filterBuilder.putFields("category", Value.newBuilder()
+                .setStructValue(
+                    Struct.newBuilder()
+                        .putFields("$eq", Value.newBuilder()
+                            .setStringValue(searchRequestDto.getCategory())
+                            .build())
+                        .build()
+                ).build());
+        }
+    
+        // 전체 필터 생성
+        Struct filter = filterBuilder.build();
 
         QueryResponseWithUnsignedIndices queryResponse = index.query(
             topK, // 검색할 유사 벡터 개수
@@ -206,6 +258,8 @@ public class PineconeServiceImpl implements PineconeService {
         .title(metadataStruct.getFieldsOrDefault("title", Value.newBuilder().setStringValue("").build()).getStringValue())
         .longSummary(metadataStruct.getFieldsOrDefault("longSummary", Value.newBuilder().setStringValue("").build()).getStringValue())
         .shortSummary(metadataStruct.getFieldsOrDefault("shortSummary", Value.newBuilder().setStringValue("").build()).getStringValue())
+        .domain(metadataStruct.getFieldsOrDefault("domain", Value.newBuilder().setStringValue("").build()).getStringValue())
+        .category(metadataStruct.getFieldsOrDefault("category", Value.newBuilder().setStringValue("").build()).getStringValue())
         .keywords(metadataStruct.getFieldsOrDefault("keywords", Value.newBuilder().setListValue(ListValue.newBuilder().build()).build()).getListValue().getValuesList().stream().map(Value::getStringValue).toList())
         .spentTime((int) metadataStruct.getFieldsOrDefault("spentTime", Value.newBuilder().setNumberValue(0).build()).getNumberValue())
         .visitCount((int) metadataStruct.getFieldsOrDefault("visitCount", Value.newBuilder().setNumberValue(0).build()).getNumberValue())
