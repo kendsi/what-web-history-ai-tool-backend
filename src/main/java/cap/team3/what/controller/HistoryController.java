@@ -26,7 +26,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class WhatController {
+public class HistoryController {
 
     private final HistoryService historyService;
 
@@ -77,13 +77,14 @@ public class WhatController {
     @PutMapping("/api/history")
     public ResponseEntity<DetailedHistoryResponseDto> updateHistory(
                 @RequestParam(name = "url") String url, 
-                @RequestParam(name = "spentTime", defaultValue = "0") int spentTime) {
+                @RequestParam(name = "spentTime", defaultValue = "0") int spentTime,
+                @RequestParam(name = "category") String category) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
         }
 
-        return new ResponseEntity<>(historyService.updateHistory(url, spentTime), HttpStatus.OK);
+        return new ResponseEntity<>(historyService.updateHistory(url, spentTime, category), HttpStatus.OK);
     }
 
     @DeleteMapping("/api/history")

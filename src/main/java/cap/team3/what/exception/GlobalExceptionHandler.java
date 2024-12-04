@@ -30,6 +30,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public final ResponseEntity<Object> handleCategoryNotFoundException(CategoryNotFoundException ex, WebRequest request) {
+        log.error("CategoryNotFoundException occurred: {}", ex.getMessage(), ex);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @ExceptionHandler(JwtValidationException.class)
     public final ResponseEntity<Object> handleJwtValidationException(JwtValidationException ex, WebRequest request) {
         log.error("JwtValidationException occurred: {}", ex.getMessage(), ex);

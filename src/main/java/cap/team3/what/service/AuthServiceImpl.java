@@ -21,6 +21,7 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final UserService userService;
+    private final CategoryService categoryService;
     private final JwtTokenProvider jwtTokenProvider;
     private final RestTemplate restTemplate;
 
@@ -45,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             user = new User(email);
             userService.registerUser(user);
+            categoryService.createDefaultCategories();
         }
 
         // Access Token과 Refresh Token 생성

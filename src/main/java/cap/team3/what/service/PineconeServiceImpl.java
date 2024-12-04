@@ -37,7 +37,7 @@ public class PineconeServiceImpl implements PineconeService {
 
     @Override
     public void saveDocument(VectorMetaData metaData) {
-        List<Float> embeddingVector = embeddingService.embeddingVector(metaData.getLongSummary() + metaData.getKeywords().toString());
+        List<Float> embeddingVector = embeddingService.embeddingVector(metaData.getKeywords().toString() + metaData.getCategory());
 
         Map<String, Value> metaDataMap = Map.ofEntries(
             Map.entry("email", Value.newBuilder().setStringValue(metaData.getEmail()).build()),
@@ -57,7 +57,7 @@ public class PineconeServiceImpl implements PineconeService {
                                 .putAllFields(metaDataMap)
                                 .build();
                                 
-        String id = new RandomIdGenerator().generateId(metaData.getEmail() + metaData.getLongSummary());
+        String id = new RandomIdGenerator().generateId(metaData.getEmail() + metaData.getUrl());
 
         index.upsert(id, embeddingVector, null, null, metaDatas, null);
 
@@ -84,7 +84,7 @@ public class PineconeServiceImpl implements PineconeService {
                                 .putAllFields(metaDataMap)
                                 .build();
                                 
-        String id = new RandomIdGenerator().generateId(metaData.getEmail() + metaData.getLongSummary());
+        String id = new RandomIdGenerator().generateId(metaData.getEmail() + metaData.getUrl());
 
         index.upsert(id, embeddingVector, null, null, metaDatas, null);
 
@@ -112,20 +112,6 @@ public class PineconeServiceImpl implements PineconeService {
             Map.entry("visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build()),
             Map.entry("visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build())
         );
-
-        // Map<String, Value> metaDataMap = Map.of(
-        //     "email", Value.newBuilder().setStringValue(metaData.getEmail()).build(),
-        //     "url", Value.newBuilder().setStringValue(metaData.getUrl()).build(),
-        //     "title", Value.newBuilder().setStringValue(metaData.getTitle()).build(),
-        //     "shortSummary", Value.newBuilder().setStringValue(metaData.getShortSummary()).build(),
-        //     "longSummary", Value.newBuilder().setStringValue(metaData.getLongSummary()).build(),
-        //     "domain", Value.newBuilder().setStringValue(metaData.getDomain()).build(),
-        //     "category", Value.newBuilder().setStringValue(metaData.getCategory()).build(),
-        //     "keywords", Value.newBuilder().setListValue(toListValue(metaData.getKeywords())).build(),
-        //     "spentTime", Value.newBuilder().setNumberValue((double) metaData.getSpentTime()).build(),
-        //     "visitCount", Value.newBuilder().setNumberValue((double) metaData.getVisitCount()).build(),
-        //     "visitTime", Value.newBuilder().setNumberValue((double) metaData.getVisitTime().toEpochSecond(ZoneOffset.UTC)).build()
-        // );
 
         Struct metaDatas = Struct.newBuilder()
                                 .putAllFields(metaDataMap)
