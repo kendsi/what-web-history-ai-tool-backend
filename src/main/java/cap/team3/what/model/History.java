@@ -45,14 +45,19 @@ public class History {
     )
     private List<Keyword> keywords;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @Builder
-    public History(User user, String content, String vectorId, String title, String longSummary, String shortSummary, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
+    public History(User user, String content, String vectorId, String title, String longSummary, String shortSummary, Category category, String url, int spentTime, int visitCount, LocalDateTime visitTime, List<Keyword> keywords) {
         this.user = user;
         this.content = content;
         this.vectorId = vectorId;
         this.title = title;
         this.longSummary = longSummary;
         this.shortSummary = shortSummary;
+        this.category = category;
         this.url = url;
         this.spentTime = spentTime;
         this.visitCount = visitCount;

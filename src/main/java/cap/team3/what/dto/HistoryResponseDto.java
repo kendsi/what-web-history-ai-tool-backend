@@ -14,14 +14,16 @@ public class HistoryResponseDto {
     private List<String> keywords;
     private LocalDateTime visitTime;
     private String shortSummary;
+    private String category;
 
     @Builder
-    public HistoryResponseDto(Long id, String url, String title, List<String> keywords, LocalDateTime visitTime, String shortSummary) {
+    public HistoryResponseDto(Long id, String url, String title, List<String> keywords, LocalDateTime visitTime, String shortSummary, String category) {
         this.id = id;
         this.url = url;
         this.title = title;
         this.keywords = keywords;
         this.visitTime = visitTime;
         this.shortSummary = shortSummary;
+        this.category = category;
     }
 }

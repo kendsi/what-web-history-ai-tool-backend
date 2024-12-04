@@ -21,47 +21,67 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final UserService userService;
+    private final CategoryService categoryService;
     private final JwtTokenProvider jwtTokenProvider;
     private final RestTemplate restTemplate;
 
     @Override
     @Transactional
-    public String login(String accessToken) {
+    public Map<String, String> login(String accessToken) {
         // Google OAuth2 토큰 검증
         String url = "https://www.googleapis.com/oauth2/v3/userinfo";
         log.info(accessToken);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
-
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-            url,
-            HttpMethod.GET,
-            entity,
-            Map.class
-        );
+        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
 
         String email = (String) response.getBody().get("email");
 
+        User user;
         try {
-            User user = userService.getUserByEmail(email);
-            return jwtTokenProvider.createToken(user.getEmail());
+            user = userService.getUserByEmail(email);
         } catch (Exception e) {
-            User newUser = new User(email);
-            userService.registerUser(newUser);
-            return jwtTokenProvider.createToken(email);
+            user = new User(email);
+            userService.registerUser(user);
+            categoryService.createDefaultCategories();
         }
+
+        // Access Token과 Refresh Token 생성
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getEmail());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+        jwtTokenProvider.saveRefreshToken(user.getEmail(), refreshToken);
+
+        return Map.of("accessToken", newAccessToken, "refreshToken", refreshToken);
     }
 
     @Override
     @Transactional
-    public void logout(String token) {
+    public void logout(String accessToken) {
+        if (jwtTokenProvider.validateAccessToken(accessToken)) {
+            String email = jwtTokenProvider.getEmailFromAccessToken(accessToken);
 
-        if (jwtTokenProvider.validateToken(token)) {
-            jwtTokenProvider.blacklistToken(token);
+            // Access Token 블랙리스트 추가
+            jwtTokenProvider.blacklistAccessToken(accessToken);
+
+            // Refresh Token 무효화
+            jwtTokenProvider.invalidateRefreshToken(email);
         } else {
-            throw new IllegalArgumentException("Invalid token");
+            throw new IllegalArgumentException("Invalid access token");
         }
+    }
+
+    @Transactional
+    public String refresh(String refreshToken) {
+        // Refresh Token 검증
+        String email = jwtTokenProvider.getEmailFromAccessToken(refreshToken);
+        if (!jwtTokenProvider.validateRefreshToken(email, refreshToken)) {
+            throw new IllegalArgumentException("Invalid refresh token");
+        }
+
+        // Access Token 재발급
+        return jwtTokenProvider.createAccessToken(email);
     }
 }

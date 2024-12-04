@@ -11,7 +11,8 @@ public class ChatResponseParser {
     public static ParsedChatResponse parseChatResponse(String response) {
         String titlePattern = "title: (.+?)(?=\\nlongSummary:)";
         String longSummaryPattern = "longSummary: (.+?)(?=\\nshortSummary:)";
-        String shortSummaryPattern = "shortSummary: (.+?)(?=\\nkeywords:)";
+        String shortSummaryPattern = "shortSummary: (.+?)(?=\\ncategory:)";
+        String categoryPattern = "category: (.+?)(?=\\nkeywords:)";
         String keywordsPattern = "keywords: \\[(.+)]";
 
         // Extract title
@@ -23,6 +24,9 @@ public class ChatResponseParser {
         // Extract shortSummary
         String shortSummary = extractUsingRegex(response, shortSummaryPattern);
 
+        // Extract category
+        String category = extractUsingRegex(response, categoryPattern);
+
         // Extract keywords and convert to List<String>
         String keywordsString = extractUsingRegex(response, keywordsPattern);
         List<String> keywords = new ArrayList<>();
@@ -33,7 +37,7 @@ public class ChatResponseParser {
             }
         }
 
-        ParsedChatResponse parsedChatResponse = new ParsedChatResponse(title, shortSummary, longSummary, keywords);
+        ParsedChatResponse parsedChatResponse = new ParsedChatResponse(title, shortSummary, longSummary, category, keywords);
 
         return parsedChatResponse;
     }

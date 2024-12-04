@@ -15,12 +15,14 @@ public class VectorMetaData {
     private LocalDateTime visitTime;
     private String shortSummary;
     private String longSummary;
+    private String domain;
+    private String category;
     private List<String> keywords;
     private int spentTime;
     private int visitCount;
 
     @Builder
-    public VectorMetaData(String id, String email, String url, String title, LocalDateTime visitTime, String shortSummary, String longSummary, List<String> keywords, int spentTime, int visitCount) {
+    public VectorMetaData(String id, String email, String url, String title, LocalDateTime visitTime, String shortSummary, String longSummary, String domain, String category, List<String> keywords, int spentTime, int visitCount) {
         this.id = id;
         this.email = email;
         this.url = url;
@@ -28,6 +30,8 @@ public class VectorMetaData {
         this.visitTime = visitTime;
         this.shortSummary = shortSummary;
         this.longSummary = longSummary;
+        this.domain = domain;
+        this.category = category;
         this.keywords = keywords;
         this.spentTime = spentTime;
         this.visitCount = visitCount;

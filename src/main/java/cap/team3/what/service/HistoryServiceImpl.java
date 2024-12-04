@@ -1,5 +1,6 @@
 package cap.team3.what.service;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +14,10 @@ import cap.team3.what.dto.DetailedHistoryResponseDto;
 import cap.team3.what.dto.HistoryRequestDto;
 import cap.team3.what.dto.HistoryResponseDto;
 import cap.team3.what.dto.ParsedChatResponse;
+import cap.team3.what.dto.SearchRequestDto;
 import cap.team3.what.dto.VectorMetaData;
 import cap.team3.what.exception.HistoryNotFoundException;
+import cap.team3.what.model.Category;
 import cap.team3.what.model.History;
 import cap.team3.what.model.Keyword;
 import cap.team3.what.model.User;
@@ -33,6 +36,7 @@ public class HistoryServiceImpl implements HistoryService {
     private final KeywordRepository keywordRepository;
     private final UserService userService;
     private final ChatService chatService;
+    private final CategoryService categoryService;
     private final PineconeService pineconeService;
     
     @Override
@@ -57,50 +61,31 @@ public class HistoryServiceImpl implements HistoryService {
             return convertModelToDetailedHistoryDto(historyRepository.save(history));
         }
 
-        List<History> histories = historyRepository.findByUrl(historyRequestDto.getUrl()); 
-
         History newHistory = History.builder()
                 .url(historyRequestDto.getUrl())
                 .content(historyRequestDto.getContent())
                 .user(user)
                 .build();
         historyRepository.save(newHistory);
-            
-        if (histories.isEmpty()) {
-            ParsedChatResponse parsedChatResponse = ChatResponseParser.parseChatResponse(chatService.analyzeContent(historyRequestDto.getContent()));
 
-            metaData = VectorMetaData.builder()
-                                        .email(email)
-                                        .url(historyRequestDto.getUrl())
-                                        .title(parsedChatResponse.getTitle())
-                                        .visitTime(LocalDateTime.now())
-                                        .shortSummary(parsedChatResponse.getShortSummary())
-                                        .longSummary(parsedChatResponse.getLongSummary())
-                                        .keywords(parsedChatResponse.getKeywords())
-                                        .spentTime(0)
-                                        .visitCount(1)
-                                        .build();
+        ParsedChatResponse parsedChatResponse = ChatResponseParser.parseChatResponse(chatService.analyzeContent("categories: " + categoryService.getAllCategories() + "\n" + historyRequestDto.getContent()));
 
-            pineconeService.saveDocument(metaData);
-        } else {
-            log.info("Reuse Ohter User's Data");
-            history = histories.get(0);
+        metaData = VectorMetaData.builder()
+                                    .email(email)
+                                    .url(historyRequestDto.getUrl())
+                                    .title(parsedChatResponse.getTitle())
+                                    .visitTime(LocalDateTime.now())
+                                    .shortSummary(parsedChatResponse.getShortSummary())
+                                    .longSummary(parsedChatResponse.getLongSummary())
+                                    .domain(extractDomain(historyRequestDto.getUrl()))
+                                    .category(parsedChatResponse.getCategory())
+                                    .keywords(parsedChatResponse.getKeywords())
+                                    .spentTime(0)
+                                    .visitCount(1)
+                                    .build();
 
-            metaData = convertModelToMetaData(history);
-            metaData.setEmail(email);
-            metaData.setVisitTime(LocalDateTime.now());
-            metaData.setSpentTime(0);
-            metaData.setVisitCount(1);
-
-            List<Float> embeddingVector = pineconeService.getVector(metaData.getId());
-            if (embeddingVector.isEmpty() || embeddingVector == null) {
-                pineconeService.saveDocument(metaData);
-            } else {
-                pineconeService.saveDocument(metaData, embeddingVector);
-
-            }
-        }
-        
+        pineconeService.saveDocument(metaData);
+    
         convertMetaDataToModel(metaData, newHistory);
         return convertModelToDetailedHistoryDto(historyRepository.save(newHistory));
         
@@ -151,7 +136,7 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional
-    public DetailedHistoryResponseDto updateHistory(String url, int spentTime) {
+    public DetailedHistoryResponseDto updateHistory(String url, int spentTime, String category) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
         
@@ -160,8 +145,15 @@ public class HistoryServiceImpl implements HistoryService {
 
         history.setSpentTime(history.getSpentTime() + spentTime);
 
-        VectorMetaData metaData = convertModelToMetaData(history);
-        pineconeService.updateDocument(metaData);
+        if (!category.isEmpty() || category.equals("")) {
+            categoryService.updateCategory(history.getCategory().getName(), category);
+            history.setCategory(categoryService.findByName(category));
+        } else {
+            history.setCategory(null);
+        }
+
+        // VectorMetaData metaData = convertModelToMetaData(history);
+        // pineconeService.updateDocument(metaData);
 
         return convertModelToDetailedHistoryDto(historyRepository.save(history));
     }
@@ -200,10 +192,10 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public List<HistoryResponseDto> searchHistory(LocalDateTime startTime, LocalDateTime endTime, String query) {
+    public List<HistoryResponseDto> searchHistory(SearchRequestDto searchRequestDto) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<VectorMetaData> metaDatas = pineconeService.searchDocuments(query, email,10, startTime, endTime);
+        List<VectorMetaData> metaDatas = pineconeService.searchDocuments(searchRequestDto, email,10);
 
         return metaDatas.stream()
                         .map(VectorMetaData::getUrl) // URL 추출
@@ -267,10 +259,13 @@ public class HistoryServiceImpl implements HistoryService {
             keywords = new ArrayList<>();
         }
 
+        Category category = categoryService.findByName(metaData.getCategory());
+
         history.setVectorId(metaData.getId());
         history.setTitle(metaData.getTitle());
         history.setLongSummary(metaData.getLongSummary());
         history.setShortSummary(metaData.getShortSummary());
+        history.setCategory(category);
         history.setKeywords(keywords);
         history.setSpentTime(metaData.getSpentTime());
         history.setVisitCount(metaData.getVisitCount());
@@ -297,6 +292,8 @@ public class HistoryServiceImpl implements HistoryService {
                                 .visitTime(history.getVisitTime())
                                 .shortSummary(history.getShortSummary())
                                 .longSummary(history.getLongSummary())
+                                .domain(extractDomain(history.getUrl()))
+                                .category(history.getCategory().getName())
                                 .keywords(keywords)
                                 .spentTime(history.getSpentTime())
                                 .visitCount(history.getVisitCount())
@@ -322,6 +319,7 @@ public class HistoryServiceImpl implements HistoryService {
                                     .keywords(keywords)
                                     .visitTime(history.getVisitTime())
                                     .shortSummary(history.getShortSummary())
+                                    .category(history.getCategory().getName())
                                     .build();
     }
     
@@ -344,9 +342,20 @@ public class HistoryServiceImpl implements HistoryService {
                                             .visitTime(history.getVisitTime())
                                             .shortSummary(history.getShortSummary())
                                             .longSummary(history.getLongSummary())
+                                            .category(history.getCategory().getName())
                                             .keywords(keywords)
                                             .spentTime(history.getSpentTime())
                                             .visitCount(history.getVisitCount())
                                             .build();
     }
+
+    private String extractDomain(String urlString) {
+        try {
+            String host = URI.create(urlString).getHost();
+            return host;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid URL: " + urlString, e);
+        }
+    }
+
 }

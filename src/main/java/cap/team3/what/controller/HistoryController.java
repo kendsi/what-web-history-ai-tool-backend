@@ -3,6 +3,7 @@ package cap.team3.what.controller;
 import cap.team3.what.dto.DetailedHistoryResponseDto;
 import cap.team3.what.dto.HistoryRequestDto;
 import cap.team3.what.dto.HistoryResponseDto;
+import cap.team3.what.dto.SearchRequestDto;
 import cap.team3.what.service.HistoryService;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class WhatController {
+public class HistoryController {
 
     private final HistoryService historyService;
 
@@ -76,13 +77,14 @@ public class WhatController {
     @PutMapping("/api/history")
     public ResponseEntity<DetailedHistoryResponseDto> updateHistory(
                 @RequestParam(name = "url") String url, 
-                @RequestParam(name = "spentTime", defaultValue = "0") int spentTime) {
+                @RequestParam(name = "spentTime", defaultValue = "0") int spentTime,
+                @RequestParam(name = "category") String category) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
         }
 
-        return new ResponseEntity<>(historyService.updateHistory(url, spentTime), HttpStatus.OK);
+        return new ResponseEntity<>(historyService.updateHistory(url, spentTime, category), HttpStatus.OK);
     }
 
     @DeleteMapping("/api/history")
@@ -98,28 +100,24 @@ public class WhatController {
         return new ResponseEntity<String>("History Successfully Deleted", HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/api/history/search")
-    public ResponseEntity<List<HistoryResponseDto>> searchHistory(
-        @Parameter(description = "Start time for filtering history (optional)", required = false)
-        @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
-        
-        @Parameter(description = "End time for filtering history (optional)", required = false)
-        @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
-        
-        @RequestParam(name = "query") String query) {
+    @PostMapping("/api/history/search")
+    public ResponseEntity<List<HistoryResponseDto>> searchHistory(@RequestBody SearchRequestDto searchRequestDto) {
 
-
+        LocalDateTime startTime = searchRequestDto.getStartTime();
+        LocalDateTime endTime = searchRequestDto.getEndTime();
         if (startTime == null) {
             startTime = LocalDateTime.of(-4712, 1, 1, 0, 0);
+            searchRequestDto.setStartTime(startTime);
         }
         if (endTime == null) {
             endTime = LocalDateTime.of(294275, 12, 31, 23, 59);
+            searchRequestDto.setEndTime(endTime);
         }
         if (startTime.isAfter(endTime)) {
             throw new IllegalArgumentException("start time cannot be after end time");
         }
         
-        List<HistoryResponseDto> result = historyService.searchHistory(startTime, endTime, query);
+        List<HistoryResponseDto> result = historyService.searchHistory(searchRequestDto);
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
