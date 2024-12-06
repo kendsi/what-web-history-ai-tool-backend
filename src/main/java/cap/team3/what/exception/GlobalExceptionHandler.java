@@ -85,14 +85,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    // IO 예외 처리 (예: 프롬프트 파일을 읽지 못했을 때)
-    @ExceptionHandler(IOException.class)
-    public final ResponseEntity<Object> handleIOException(IOException ex, WebRequest request) {
-        log.error("IOException occurred while reading the prompt file: {}", ex.getMessage(), ex);
+    // GPT 요청 예외 처리
+    @ExceptionHandler(GptResponseException.class)
+    public final ResponseEntity<Object> handleGptResponseException(GptResponseException ex, WebRequest request) {
+        log.error("GptResponseException occured: {}", ex.getMessage(), ex);
 
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
-        body.put("message", "Failed to read the prompt file. Please check the file path and try again.");
+        body.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // 프롬프트 파일을 읽지 못했을 때
+    @ExceptionHandler(ReadPromptException.class)
+    public final ResponseEntity<Object> handleReadPromptException(ReadPromptException ex, WebRequest request) {
+        log.error("ReadPromptException occurred: {}", ex.getMessage(), ex);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }

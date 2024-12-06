@@ -46,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             user = new User(email);
             userService.registerUser(user);
-            categoryService.createDefaultCategories();
+            categoryService.createDefaultCategories(user);
         }
 
         // Access Token과 Refresh Token 생성

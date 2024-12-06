@@ -19,10 +19,8 @@ public class CategoryServiceImpl implements CategoryService {
     private final UserService userService;
 
     @Override
-    public void createDefaultCategories() {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.getUserByEmail(email);
-        List<String> defaultCategories = List.of("게임", "학습", "엔터테인먼트", "뉴스", "쇼핑", "기타");
+    public void createDefaultCategories(User user) {
+        List<String> defaultCategories = List.of("게임", "학습", "엔터테인먼트", "뉴스", "쇼핑", "스포츠", "기타");
         for (String categoryName : defaultCategories) {
             Category category = new Category(user, categoryName);
             categoryRepository.save(category);

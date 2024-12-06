@@ -121,33 +121,9 @@ public class HistoryController {
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
-    
-    
-    @GetMapping("/api/history/statistics/{keyword}/frequency")
-    public int getKeywordFrequency(
-                @Parameter(description = "Start time for filtering history (optional)", required = false)
-                @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
-                
-                @Parameter(description = "End time for filtering history (optional)", required = false)
-                @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
-
-                @PathVariable(name = "keyword") String keyword) {
-
-        if (startTime == null) {
-            startTime = LocalDateTime.now().minusDays(7);
-        }
-        if (endTime == null) {
-            endTime = LocalDateTime.now().isBefore(startTime.plusDays(7)) ? LocalDateTime.now() : startTime.plusDays(7);
-        }
-        if (startTime.isAfter(endTime)) {
-            throw new IllegalArgumentException("start time cannot be after end time");
-        }
-
-        return historyService.getKeywordFrequency(startTime, endTime, keyword);
-    }
 
     @GetMapping("/api/history/statistics/{keyword}/spent_time")
-    public int getTotalSpentTime(
+    public ResponseEntity<Integer> getTotalSpentTime(
                 @Parameter(description = "Start time for filtering history (optional)", required = false)
                 @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
                 
@@ -166,6 +142,74 @@ public class HistoryController {
             throw new IllegalArgumentException("start time cannot be after end time");
         }
 
-        return historyService.getTotalSpentTime(startTime, endTime, keyword);
+        return new ResponseEntity<>(historyService.getTotalSpentTime(startTime, endTime, keyword), HttpStatus.OK);
+    }
+    
+    @GetMapping("/api/history/statistics/{keyword}/frequency")
+    public ResponseEntity<Integer> getKeywordFrequency(
+                @Parameter(description = "Start time for filtering history (optional)", required = false)
+                @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
+                
+                @Parameter(description = "End time for filtering history (optional)", required = false)
+                @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
+
+                @PathVariable(name = "keyword") String keyword) {
+
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+        if (endTime == null) {
+            endTime = LocalDateTime.now().isBefore(startTime.plusDays(7)) ? LocalDateTime.now() : startTime.plusDays(7);
+        }
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+        return new ResponseEntity<>(historyService.getKeywordFrequency(startTime, endTime, keyword), HttpStatus.OK);
+    }
+
+    @GetMapping("/api/history/statistics/domain")
+    public ResponseEntity<List<String>> getDomainFrequency(
+                @Parameter(description = "Start time for filtering (optional)", required = false)
+                @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
+                
+                @Parameter(description = "End time for filtering (optional)", required = false)
+                @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
+
+                @RequestParam(name = "k") int k) {
+
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+        if (endTime == null) {
+            endTime = LocalDateTime.now().isBefore(startTime.plusDays(7)) ? LocalDateTime.now() : startTime.plusDays(7);
+        }
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+
+        return new ResponseEntity<>(historyService.getDomainFrequency(startTime, endTime, k), HttpStatus.OK);
+    }
+
+    @GetMapping("/api/history/statistics/category")
+    public ResponseEntity<List<String>> getCategoryFrequency(
+                @Parameter(description = "Start time for filtering (optional)", required = false)
+                @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
+                
+                @Parameter(description = "End time for filtering (optional)", required = false)
+                @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
+
+                @RequestParam(name = "k") int k) {
+
+        if (startTime == null) {
+            startTime = LocalDateTime.now().minusDays(7);
+        }
+        if (endTime == null) {
+            endTime = LocalDateTime.now().isBefore(startTime.plusDays(7)) ? LocalDateTime.now() : startTime.plusDays(7);
+        }
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("start time cannot be after end time");
+        }
+
+        return new ResponseEntity<>(historyService.getCategoryFrequency(startTime, endTime, k), HttpStatus.OK);
     }
 }

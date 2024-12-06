@@ -1,6 +1,7 @@
 package cap.team3.what.service;
 
 import java.net.URI;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -239,9 +240,27 @@ public class HistoryServiceImpl implements HistoryService {
         return totalSpentTime;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getDomainFrequency(LocalDateTime startTime, LocalDateTime endTime, int k) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
 
+        List<String> domains = historyRepository.findTopKDistinctDomains(user.getId(), startTime, endTime, k);
 
+        return domains;
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getCategoryFrequency(LocalDateTime startTime, LocalDateTime endTime, int k) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
+
+        List<String> domains = historyRepository.findTopKCategories(user.getId(), startTime, endTime, k);
+
+        return domains;
+    }
 
 
 

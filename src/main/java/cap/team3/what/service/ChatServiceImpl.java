@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.chat.messages.*;
 
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import cap.team3.what.config.ObjectMapperConfig;
+import cap.team3.what.exception.GptResponseException;
+import cap.team3.what.exception.ReadPromptException;
 
 @Slf4j
 @Service
@@ -28,6 +32,7 @@ public class ChatServiceImpl implements ChatService {
     @Value("classpath:prompts/prompt.json")
     private Resource promptResource;
 
+    private final OpenAiApi openAiApi;
     private final OpenAiChatModel openAiChatModel;
     
     @Override
@@ -49,20 +54,41 @@ public class ChatServiceImpl implements ChatService {
 
             // 프롬프트 로그 출력
             log.info("Generated Prompt: {}", prompt.toString());
+            
+            // gpt-4o로 첫 번째 요청 시도
+            try {
+                return sendRequestWithModel(prompt, openAiChatModel);
+            } catch (GptResponseException e) {
+                log.warn("GPT-4o failed, retrying with gpt-4o-mini: {}", e.getMessage());
 
-            ChatResponse response = this.openAiChatModel.call(prompt);
-
-            if (!response.getResults().isEmpty()) {
-                String result = response.getResults().get(0).getOutput().getContent();
-                log.info(result);
-                return result;
-            } else {
-                throw new RuntimeException("No response from GPT");
+                // gpt-4o-mini로 재요청
+                OpenAiChatOptions openAiChatOptions = (OpenAiChatOptions) this.openAiChatModel.getDefaultOptions();
+                OpenAiChatOptions miniOptions = OpenAiChatOptions.builder()
+                                                                .withModel("gpt-4o-mini")
+                                                                .withTemperature(openAiChatOptions.getTemperature())
+                                                                .withFrequencyPenalty(openAiChatOptions.getFrequencyPenalty())
+                                                                .withN(openAiChatOptions.getN())
+                                                                .build();
+                OpenAiChatModel miniModel = new OpenAiChatModel(openAiApi, miniOptions);
+                return sendRequestWithModel(prompt, miniModel);
             }
 
         } catch (IOException e) {
             log.error("Failed to read the prompt file", e);
-            throw new RuntimeException("Failed to read the prompt file", e);
+            throw new ReadPromptException("Failed to read the prompt file");
+        }
+    }
+
+    // 요청을 처리하는 메서드
+    private String sendRequestWithModel(Prompt prompt, OpenAiChatModel model) {
+        ChatResponse response = model.call(prompt);
+
+        if (!response.getResults().isEmpty()) {
+            String result = response.getResults().get(0).getOutput().getContent();
+            log.info("GPT Response: {}", result);
+            return result;
+        } else {
+            throw new GptResponseException("No response from GPT");
         }
     }
 }

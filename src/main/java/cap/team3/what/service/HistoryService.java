@@ -17,6 +17,8 @@ public interface HistoryService {
     public void deleteHistory(String url);
     public List<HistoryResponseDto> searchHistory(String query);
     public List<HistoryResponseDto> searchHistory(SearchRequestDto searchRequestDto);
-    public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword);
     public int getTotalSpentTime(LocalDateTime startTime, LocalDateTime endTime, String keyword);
+    public int getKeywordFrequency(LocalDateTime startTime, LocalDateTime endTime, String keyword);
+    public List<String> getDomainFrequency(LocalDateTime startTime, LocalDateTime endTime, int k);
+    public List<String> getCategoryFrequency(LocalDateTime startTime, LocalDateTime endTime, int k);
 }
