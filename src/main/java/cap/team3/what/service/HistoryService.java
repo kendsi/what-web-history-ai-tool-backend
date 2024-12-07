@@ -13,6 +13,7 @@ public interface HistoryService {
     public DetailedHistoryResponseDto getDetailedHistoryById(Long id);
     public HistoryResponseDto getHistoryByUrl(String url);
     public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy);
+    public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String domain, String category, String orderBy);
     public DetailedHistoryResponseDto updateHistory(String url, int spentTime, String category);
     public void deleteHistory(String url);
     public List<HistoryResponseDto> searchHistory(String query);

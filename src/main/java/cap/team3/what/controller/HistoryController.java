@@ -51,6 +51,12 @@ public class HistoryController {
         @Parameter(description = "End time for filtering history (optional)", required = false)
         @RequestParam(name = "endTime", required = false) LocalDateTime endTime,
 
+        @Parameter(description = "Domain for filtering history (optional)", required = false)
+        @RequestParam(name = "domain", required = false, defaultValue = "") String domain,
+
+        @Parameter(description = "Category for filtering history (optional)", required = false)
+        @RequestParam(name = "category", required = false, defaultValue = "") String category,
+
         @RequestParam(name = "orderBy", defaultValue = "visitTime") String orderBy) {
 
         
@@ -65,7 +71,8 @@ public class HistoryController {
             throw new IllegalArgumentException("start time cannot be after end time");
         }
 
-        List<HistoryResponseDto> histories = historyService.getHistoriesByTime(startTime, endTime, orderBy);
+        List<HistoryResponseDto> histories = historyService.getHistoriesByTime(startTime, endTime, domain, category, orderBy);
+
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }
 

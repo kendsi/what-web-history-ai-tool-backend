@@ -125,10 +125,26 @@ public class HistoryServiceImpl implements HistoryService {
         } else {
             histories = historyRepository.findByVisitTimeBetweenOrderByVisitTime(user, startTime, endTime);
         }
-        
-        // if (histories.isEmpty()) {
-        //     throw new HistoryNotFoundException("No corresponding histories in the given time range");
-        // }
+
+        return histories.stream()
+                    .map(this::convertModelToHistoryDto)
+                    .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String domain, String category, String orderBy) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
+
+        List<History> histories;
+        if ("visitCount".equals(orderBy)) {
+            histories = historyRepository.findByVisitTimeBetweenAndFiltersOrderByVisitCount(user.getId(), startTime, endTime, domain, category);
+        } else if ("spentTime".equals(orderBy)) {
+            histories = historyRepository.findByVisitTimeBetweenAndFiltersOrderBySpentTime(user.getId(), startTime, endTime, domain, category);
+        } else {
+            histories = historyRepository.findByVisitTimeBetweenAndFiltersOrderByVisitTime(user.getId(), startTime, endTime, domain, category);
+        }
 
         return histories.stream()
                     .map(this::convertModelToHistoryDto)

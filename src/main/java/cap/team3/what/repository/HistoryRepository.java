@@ -60,6 +60,58 @@ public interface HistoryRepository extends JpaRepository<History, Long> {
                                                                @Param("startTime") LocalDateTime startTime,
                                                                @Param("endTime") LocalDateTime endTime);
 
+
+    @Query(value = """
+        SELECT h.*
+        FROM history h
+        LEFT JOIN category c ON h.category_id = c.id
+        WHERE h.user_id = ?1
+        AND h.visit_time BETWEEN ?2 AND ?3
+        AND (?4 = '' OR REGEXP_REPLACE(SPLIT_PART(h.url, '/', 3), '^(https?://|http://|//)?', '') = ?4)
+        AND (?5 = '' OR c.name = ?5)
+        ORDER BY h.spent_time DESC
+    """, nativeQuery = true)
+    List<History> findByVisitTimeBetweenAndFiltersOrderBySpentTime(Long userId,
+                                                                    LocalDateTime startTime,
+                                                                    LocalDateTime endTime,
+                                                                    String domain,
+                                                                    String categoryName);
+
+    @Query(value = """
+        SELECT h.*
+        FROM history h
+        LEFT JOIN category c ON h.category_id = c.id
+        WHERE h.user_id = ?1
+        AND h.visit_time BETWEEN ?2 AND ?3
+        AND (?4 = '' OR REGEXP_REPLACE(SPLIT_PART(h.url, '/', 3), '^(https?://|http://|//)?', '') = ?4)
+        AND (?5 = '' OR c.name = ?5)
+        ORDER BY h.visit_count DESC
+    """, nativeQuery = true)
+    List<History> findByVisitTimeBetweenAndFiltersOrderByVisitCount(Long userId,
+                                                                    LocalDateTime startTime,
+                                                                    LocalDateTime endTime,
+                                                                    String domain,
+                                                                    String categoryName);
+                                                                    
+
+    @Query(value = """
+        SELECT h.*
+        FROM history h
+        LEFT JOIN category c ON h.category_id = c.id
+        WHERE h.user_id = ?1
+        AND h.visit_time BETWEEN ?2 AND ?3
+        AND (?4 = '' OR REGEXP_REPLACE(SPLIT_PART(h.url, '/', 3), '^(https?://|http://|//)?', '') = ?4)
+        AND (?5 = '' OR c.name = ?5)
+        ORDER BY h.visit_time DESC
+    """, nativeQuery = true)
+    List<History> findByVisitTimeBetweenAndFiltersOrderByVisitTime(Long userId,
+                                                                    LocalDateTime startTime,
+                                                                    LocalDateTime endTime,
+                                                                    String domain,
+                                                                    String categoryName);
+                                                                    
+
+
     // 사용자와 키워드 및 방문 시간 조건으로 조회
     @Query("SELECT h FROM History h JOIN h.keywords k WHERE h.user = :user AND h.visitTime BETWEEN :startTime AND :endTime AND k.keyword = :keyword")
     List<History> findByVisitTimeBetweenAndKeyword(@Param("user") User user,
