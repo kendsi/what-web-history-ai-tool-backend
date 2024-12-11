@@ -1,7 +1,6 @@
 package cap.team3.what.service;
 
 import java.net.URI;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -147,14 +146,10 @@ public class HistoryServiceImpl implements HistoryService {
         history.setSpentTime(history.getSpentTime() + spentTime);
 
         if (!category.isEmpty() || category.equals("")) {
-            categoryService.updateCategory(history.getCategory().getName(), category);
             history.setCategory(categoryService.findByName(category));
         } else {
             history.setCategory(null);
         }
-
-        // VectorMetaData metaData = convertModelToMetaData(history);
-        // pineconeService.updateDocument(metaData);
 
         return convertModelToDetailedHistoryDto(historyRepository.save(history));
     }

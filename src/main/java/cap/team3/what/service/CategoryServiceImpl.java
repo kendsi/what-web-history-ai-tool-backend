@@ -6,6 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import cap.team3.what.exception.CategoryNotFoundException;
+import cap.team3.what.exception.DuplicateCategoryException;
 import cap.team3.what.model.Category;
 import cap.team3.what.model.User;
 import cap.team3.what.repository.CategoryRepository;
@@ -51,6 +52,11 @@ public class CategoryServiceImpl implements CategoryService {
 
         Category category = categoryRepository.findByUserAndName(user, originalName)
             .orElseThrow(() -> new CategoryNotFoundException("Category not found: " + originalName));
+
+        categoryRepository.findByUserAndName(user, newName).ifPresent((existingCategory) -> {
+            throw new DuplicateCategoryException("Category with name '" + existingCategory.getName() + "' already exists.");
+        });
+
         category.setName(newName);
         categoryRepository.save(category);
     }
