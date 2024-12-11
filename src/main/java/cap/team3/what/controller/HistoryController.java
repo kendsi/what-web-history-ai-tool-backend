@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -44,7 +46,7 @@ public class HistoryController {
     }
     
     @GetMapping("/api/history")
-    public ResponseEntity<List<HistoryResponseDto>> getHistoryByTime(
+    public ResponseEntity<Page<HistoryResponseDto>> getHistoryByTime(
         @Parameter(description = "Start time for filtering history (optional)", required = false)
         @RequestParam(name = "startTime", required = false) LocalDateTime startTime,
         
@@ -57,7 +59,7 @@ public class HistoryController {
         @Parameter(description = "Category for filtering history (optional)", required = false)
         @RequestParam(name = "category", required = false, defaultValue = "") String category,
 
-        @RequestParam(name = "orderBy", defaultValue = "visitTime") String orderBy) {
+        Pageable pageable) {
 
         
         if (startTime == null) {
@@ -71,7 +73,7 @@ public class HistoryController {
             throw new IllegalArgumentException("start time cannot be after end time");
         }
 
-        List<HistoryResponseDto> histories = historyService.getHistoriesByTime(startTime, endTime, domain, category, orderBy);
+        Page<HistoryResponseDto> histories = historyService.getHistoriesByTime(startTime, endTime, domain, category, pageable);
 
         return new ResponseEntity<>(histories, HttpStatus.OK);
     }

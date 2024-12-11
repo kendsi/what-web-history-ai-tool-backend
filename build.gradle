@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'cap.team3'
-version = '0.0.2-SNAPSHOT'
+version = '1.0.0-SNAPSHOT'
 
 java {
 	toolchain {

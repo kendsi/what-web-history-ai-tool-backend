@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -113,42 +115,24 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
+    public Page<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
 
-        List<History> histories;
-        if ("visitCount".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenOrderByVisitCount(user, startTime, endTime);
-        } else if ("spentTime".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenOrderBySpentTime(user, startTime, endTime);
-        } else {
-            histories = historyRepository.findByVisitTimeBetweenOrderByVisitTime(user, startTime, endTime);
-        }
+        Page<History> histories = historyRepository.findByVisitTimeBetween(user, startTime, endTime, pageable);
 
-        return histories.stream()
-                    .map(this::convertModelToHistoryDto)
-                    .collect(Collectors.toList());
+        return histories.map(this::convertModelToHistoryDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String domain, String category, String orderBy) {
+    public Page<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String domain, String category, Pageable pageable) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
 
-        List<History> histories;
-        if ("visitCount".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenAndFiltersOrderByVisitCount(user.getId(), startTime, endTime, domain, category);
-        } else if ("spentTime".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenAndFiltersOrderBySpentTime(user.getId(), startTime, endTime, domain, category);
-        } else {
-            histories = historyRepository.findByVisitTimeBetweenAndFiltersOrderByVisitTime(user.getId(), startTime, endTime, domain, category);
-        }
+        Page<History> histories = historyRepository.findByVisitTimeBetweenAndFilters(user.getId(), startTime, endTime, domain, category, pageable);
 
-        return histories.stream()
-                    .map(this::convertModelToHistoryDto)
-                    .collect(Collectors.toList());
+        return histories.map(this::convertModelToHistoryDto);
     }
 
     @Override
