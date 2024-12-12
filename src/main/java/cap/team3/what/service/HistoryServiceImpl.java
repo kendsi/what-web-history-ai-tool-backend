@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -112,26 +114,24 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String orderBy) {
+    public Page<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userService.getUserByEmail(email);
 
-        List<History> histories;
-        if ("visitCount".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenOrderByVisitCount(user, startTime, endTime);
-        } else if ("spentTime".equals(orderBy)) {
-            histories = historyRepository.findByVisitTimeBetweenOrderBySpentTime(user, startTime, endTime);
-        } else {
-            histories = historyRepository.findByVisitTimeBetweenOrderByVisitTime(user, startTime, endTime);
-        }
-        
-        // if (histories.isEmpty()) {
-        //     throw new HistoryNotFoundException("No corresponding histories in the given time range");
-        // }
+        Page<History> histories = historyRepository.findByVisitTimeBetween(user, startTime, endTime, pageable);
 
-        return histories.stream()
-                    .map(this::convertModelToHistoryDto)
-                    .collect(Collectors.toList());
+        return histories.map(this::convertModelToHistoryDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HistoryResponseDto> getHistoriesByTime(LocalDateTime startTime, LocalDateTime endTime, String domain, String category, Pageable pageable) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
+
+        Page<History> histories = historyRepository.findByVisitTimeBetweenAndFilters(user.getId(), startTime, endTime, domain, category, pageable);
+
+        return histories.map(this::convertModelToHistoryDto);
     }
 
     @Override
@@ -146,14 +146,10 @@ public class HistoryServiceImpl implements HistoryService {
         history.setSpentTime(history.getSpentTime() + spentTime);
 
         if (!category.isEmpty() || category.equals("")) {
-            categoryService.updateCategory(history.getCategory().getName(), category);
             history.setCategory(categoryService.findByName(category));
         } else {
             history.setCategory(null);
         }
-
-        // VectorMetaData metaData = convertModelToMetaData(history);
-        // pineconeService.updateDocument(metaData);
 
         return convertModelToDetailedHistoryDto(historyRepository.save(history));
     }
@@ -239,9 +235,27 @@ public class HistoryServiceImpl implements HistoryService {
         return totalSpentTime;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getDomainFrequency(LocalDateTime startTime, LocalDateTime endTime, int k) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
 
+        List<String> domains = historyRepository.findTopKDistinctDomains(user.getId(), startTime, endTime, k);
 
+        return domains;
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getCategoryFrequency(LocalDateTime startTime, LocalDateTime endTime, int k) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserByEmail(email);
+
+        List<String> domains = historyRepository.findTopKCategories(user.getId(), startTime, endTime, k);
+
+        return domains;
+    }
 
 
 

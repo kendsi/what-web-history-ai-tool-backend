@@ -37,8 +37,7 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
         new AntPathRequestMatcher("/swagger-resources/**"),
         new AntPathRequestMatcher("/swagger-ui/**"),
         new AntPathRequestMatcher("/v3/api-docs/**"),
-        new AntPathRequestMatcher("/webjars/**"),
-        new AntPathRequestMatcher("/api/test/**")
+        new AntPathRequestMatcher("/webjars/**")
     );
 
     @Override

@@ -4,11 +4,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import cap.team3.what.dto.CategoryUpdateRequestDto;
 import cap.team3.what.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
-
+import org.springframework.web.bind.annotation.GetMapping;
 
 
 @Slf4j
@@ -40,10 +41,13 @@ public class CategoryController {
     }
 
     @PutMapping()
-    public ResponseEntity<Void> updateCategory(@RequestBody Map<String, String> categoryMap) {
-        String originalName = categoryMap.get("originalName");
-        String newName = categoryMap.get("newName");
-        categoryService.updateCategory(originalName, newName);
+    public ResponseEntity<Void> updateCategory(@RequestBody CategoryUpdateRequestDto categoryUpdateRequestDto) {
+        categoryService.updateCategory(categoryUpdateRequestDto.getOriginalName(), categoryUpdateRequestDto.getNewName());
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping()
+    public ResponseEntity<List<String>> getCategories() {
+        return new ResponseEntity<>(categoryService.getAllCategories(), HttpStatus.OK);
     }
 }
