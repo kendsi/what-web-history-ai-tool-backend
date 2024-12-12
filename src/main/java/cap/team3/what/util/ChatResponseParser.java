@@ -37,11 +37,16 @@ public class ChatResponseParser {
             String[] splitKeywords = keywordsString.split(",\\s*");
             for (String keyword : splitKeywords) {
                 String newKeyword = keyword.trim();
-                if (longSummary != null && (longSummary.contains("정상화") || longSummary.contains("신창섭"))) {
-                    log.info("'정상화' or '신창섭' found in longSummary. Skipping exception throw for keyword: " + newKeyword);
-                } else {
-                    log.info("정상화 필요");
-                    throw new GptResponseException(newKeyword);
+                
+                // Check if keyword is "정상화" or "신창섭"
+                if (newKeyword.equals("정상화") || newKeyword.equals("신창섭")) {
+                    // If longSummary contains "정상화" or "신창섭", skip exception throwing
+                    if (longSummary != null && (longSummary.contains("정상화") || longSummary.contains("신창섭"))) {
+                        log.info("'정상화' or '신창섭' found in longSummary. Skipping exception throw for keyword: " + newKeyword);
+                    } else {
+                        log.info("정상화 필요");
+                        throw new GptResponseException(newKeyword);
+                    }
                 }
                 keywords.add(newKeyword);
             }
