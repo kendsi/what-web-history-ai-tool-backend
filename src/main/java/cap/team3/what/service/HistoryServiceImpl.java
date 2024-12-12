@@ -70,7 +70,7 @@ public class HistoryServiceImpl implements HistoryService {
                 .build();
         historyRepository.save(newHistory);
 
-        ParsedChatResponse parsedChatResponse = ChatResponseParser.parseChatResponse(chatService.analyzeContent("categories: " + categoryService.getAllCategories() + "\n" + historyRequestDto.getContent()));
+        ParsedChatResponse parsedChatResponse = ChatResponseParser.parseChatResponse(chatService.analyzeContent("categories: " + categoryService.getAllCategories() + "\n방문 페이지 내용: [" + historyRequestDto.getContent() + "]"));
 
         metaData = VectorMetaData.builder()
                                     .email(email)
