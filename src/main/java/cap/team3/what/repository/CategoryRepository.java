@@ -11,5 +11,5 @@ import cap.team3.what.model.User;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findByUserAndName(User user, String name);
     List<Category> findByUser(User user);
-    Optional<Category> deleteByUserAndName(User user, String name);
+    void deleteByUserAndName(User user, String name);
 }
