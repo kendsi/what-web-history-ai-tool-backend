@@ -70,8 +70,6 @@ requirepass your-password
 
 #### JDBC
 
-JDBC 정보 입력
-
 spring.datasource.url=YOUR-DB-URL
 
 spring.datasource.username=YOUR-DB-USERNAME
