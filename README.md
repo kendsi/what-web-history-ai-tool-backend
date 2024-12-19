@@ -105,3 +105,20 @@ spring.data.redis.host=127.0.0.1 (서버 로컬)
 spring.data.redis.port=6379
 
 spring.data.redis.password=YOUR-REDIS-PASSWORD
+
+<br/>
+
+### 실행
+
+1. 로컬 혹은 서버에서 백엔드 애플리케이션 실행
+
+2. 프론트엔드에서 [networkManager.js](https://github.com/bagzaru/what-web-history-ai-tool-frontend/blob/main/scripts/service-worker/networking/networkManager.js) 코드의 기본 연결 서버 주소 변경
+```
+//defaultHost: 기본 연결 서버 주소
+const defaultHost = "http://localhost:8080";
+```
+혹은
+```
+//defaultHost: 기본 연결 서버 주소
+const defaultHost = "https://yourserver.com";
+```
