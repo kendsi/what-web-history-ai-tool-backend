@@ -6,7 +6,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import cap.team3.what.dto.ParsedChatResponse;
+import cap.team3.what.exception.GptResponseException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ChatResponseParser {
     public static ParsedChatResponse parseChatResponse(String response) {
         String titlePattern = "title: (.+?)(?=\\nlongSummary:)";
@@ -33,7 +36,19 @@ public class ChatResponseParser {
         if (keywordsString != null && !keywordsString.isEmpty()) {
             String[] splitKeywords = keywordsString.split(",\\s*");
             for (String keyword : splitKeywords) {
-                keywords.add(keyword.trim());
+                String newKeyword = keyword.trim();
+                
+                // Check if keyword is "정상화" or "신창섭"
+                if (newKeyword.equals("정상화") || newKeyword.equals("신창섭")) {
+                    // If longSummary contains "정상화" or "신창섭", skip exception throwing
+                    if (longSummary != null && (longSummary.contains("정상화") || longSummary.contains("신창섭"))) {
+                        log.info("'정상화' or '신창섭' found in longSummary. Skipping exception throw for keyword: " + newKeyword);
+                    } else {
+                        log.info("정상화 필요");
+                        throw new GptResponseException(newKeyword);
+                    }
+                }
+                keywords.add(newKeyword);
             }
         }
 

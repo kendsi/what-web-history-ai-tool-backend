@@ -29,9 +29,9 @@ public class PineconeServiceImpl implements PineconeService {
     private final Index index;
     private final EmbeddingService embeddingService;
 
-    public PineconeServiceImpl(@org.springframework.beans.factory.annotation.Value("${pinecone.apiKey}") String apiKey, EmbeddingService embeddingService) {
+    public PineconeServiceImpl(@org.springframework.beans.factory.annotation.Value("${pinecone.api-key}") String apiKey, @org.springframework.beans.factory.annotation.Value("${pinecone.index}") String indexName, EmbeddingService embeddingService) {
         this.pc = new Pinecone.Builder(apiKey).build();
-        this.index = pc.getIndexConnection("page-summary");
+        this.index = pc.getIndexConnection(indexName);
         this.embeddingService = embeddingService;
     }
 

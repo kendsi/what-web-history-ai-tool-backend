@@ -58,7 +58,7 @@ public class ChatServiceImpl implements ChatService {
             // gpt-4o로 첫 번째 요청 시도
             try {
                 return sendRequestWithModel(prompt, openAiChatModel);
-            } catch (GptResponseException e) {
+            } catch (Exception e) {
                 log.warn("GPT-4o failed, retrying with gpt-4o-mini: {}", e.getMessage());
 
                 // gpt-4o-mini로 재요청
