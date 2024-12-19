@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="debug" monitorInterval="5">
+    <!-- 공통 속성 설정 -->
+    <Properties>
+        <Property name="logFileName">WHAT</Property>
+        <Property name="consoleLayout">[%d{yyyy-MM-dd HH:mm:ss}] [%-5p] [%c{1}:%L] - %m%n</Property>
+        <Property name="fileLayout">%d [%t] %-5level %c(%M:%L) - %m%n</Property>
+        <!-- 사용자 홈 디렉토리를 참조하는 경로 설정 -->
+        <Property name="userHome">${sys:user.home}</Property>
+    </Properties>
+
+    <!-- Log Appender 설정 -->
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout charset="EUC-KR" pattern="${consoleLayout}" />
+        </Console>
+        
+        <RollingFile name="file"
+                     fileName="${userHome}/WHAT/logs/${logFileName}.log"
+                     filePattern="${userHome}/WHAT/logs/${logFileName}.%d{yyyy-MM-dd-hh}.log">
+            <PatternLayout charset="UTF-8" pattern="${fileLayout}" />
+            <Filters>
+                <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+            <Policies>
+                <TimeBasedTriggeringPolicy modulate="true" interval="1" />
+            </Policies>
+            <DefaultRolloverStrategy max="5" fileIndex="min">
+                <Delete basePath="${userHome}/WHAT/logs" maxDepth="3">
+                    <IfLastModified age="10d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="errorFile"
+                     fileName="${userHome}/WHAT/logs/error.log"
+                     filePattern="${userHome}/WHAT/logs/error/error.%d{yyyy-MM-dd}.log">
+            <PatternLayout charset="UTF-8" pattern="${fileLayout}" />
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB" />
+            </Policies>
+            <Filters>
+                <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${userHome}/WHAT/logs/error" maxDepth="3">
+                    <IfLastModified age="10d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <!-- TRACE > DEBUG > INFO > WARN > ERROR > FATAL -->
+    <Loggers>
+        <logger name="org.springframework" level="info" additivity="false">
+            <AppenderRef ref="file" />
+            <AppenderRef ref="errorFile" />
+            <AppenderRef ref="console" />
+        </logger>
+        <logger name="cap.team3.what" level="debug" additivity="false">
+            <AppenderRef ref="file" />
+            <AppenderRef ref="errorFile" />
+            <AppenderRef ref="console" />
+        </logger>
+        <Root level="info">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="errorFile" />
+        </Root>
+    </Loggers>
+</Configuration>
