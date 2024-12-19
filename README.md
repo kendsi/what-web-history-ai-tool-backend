@@ -36,8 +36,6 @@ CAU 2024-02 캡스톤 프로젝트 WHAT의 백엔드 애플리케이션입니다
 
 ### Redis 설치
 
-<br/>
-
 #### Windows
 
 [Windows Redis 레포지토리](https://github.com/microsoftarchive/redis/releases) 에서 수동 설치
