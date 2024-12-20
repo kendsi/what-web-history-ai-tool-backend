@@ -145,7 +145,7 @@ public class HistoryServiceImpl implements HistoryService {
 
         history.setSpentTime(history.getSpentTime() + spentTime);
 
-        if (!category.isEmpty() || category.equals("")) {
+        if (!category.isEmpty() || !category.equals("")) {
             history.setCategory(categoryService.findByName(category));
         } else {
             history.setCategory(null);
