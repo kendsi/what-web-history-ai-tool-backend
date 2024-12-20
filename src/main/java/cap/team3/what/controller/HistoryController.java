@@ -87,10 +87,14 @@ public class HistoryController {
     public ResponseEntity<DetailedHistoryResponseDto> updateHistory(
                 @RequestParam(name = "url") String url, 
                 @RequestParam(name = "spentTime", defaultValue = "0") int spentTime,
-                @RequestParam(name = "category") String category) {
+                @RequestParam(name = "category", required = false) String category) {
 
         if (url == null) {
             throw new IllegalArgumentException("URL is required");
+        }
+
+        if (category.isEmpty()) {
+            category = "";
         }
 
         return new ResponseEntity<>(historyService.updateHistory(url, spentTime, category), HttpStatus.OK);
