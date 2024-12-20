@@ -147,8 +147,6 @@ public class HistoryServiceImpl implements HistoryService {
 
         if (!category.isEmpty() || !category.equals("")) {
             history.setCategory(categoryService.findByName(category));
-        } else {
-            history.setCategory(null);
         }
 
         return convertModelToDetailedHistoryDto(historyRepository.save(history));

@@ -93,6 +93,10 @@ public class HistoryController {
             throw new IllegalArgumentException("URL is required");
         }
 
+        if (category.isEmpty()) {
+            category = "";
+        }
+
         return new ResponseEntity<>(historyService.updateHistory(url, spentTime, category), HttpStatus.OK);
     }
 
